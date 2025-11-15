@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -69,13 +70,26 @@ fun LoginScreen(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = "User Icon",
-            modifier = Modifier.size(90.dp),
-            tint = Color(0xFF005A9C)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        // --- Logos TATA y ESAN ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.tata_logo),
+                contentDescription = "Logo de TATA",
+                modifier = Modifier.height(50.dp)
+            )
+            Image(
+                painter = painterResource(id = R.drawable.esan_logo),
+                contentDescription = "Logo de ESAN",
+                modifier = Modifier.height(50.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // --- Títulos ---
         Text(
             text = "Sistema de Gestión de Talento",
             fontSize = 24.sp,
@@ -90,6 +104,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(24.dp))
 
+        // --- Campos de texto ---
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -123,6 +138,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
+        // --- Checkbox y Botón ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -170,6 +186,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // --- Credenciales de prueba ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -186,6 +203,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.weight(1f))
 
+        // --- Footer ---
         Text(
             text = "Sistema Inteligente de Gestión de Talento Interno",
             fontSize = 12.sp,
