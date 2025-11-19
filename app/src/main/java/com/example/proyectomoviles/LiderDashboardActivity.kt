@@ -86,7 +86,7 @@ class LiderDashboardActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = "demanda", Modifier.padding(innerPadding)) {
                         composable("demanda") { DemandaLiderScreen(onNavigateToCreateVacante = { navController.navigate("formulario_vacante") }) }
                         composable("formulario_vacante") { FormularioVacanteScreen(onNavigateBack = { navController.popBackStack() }) }
-                        composable("gestion") { GestionLiderScreen(onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") }) }
+                        composable("gestion") { GestionLiderScreen(onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") }, onNavigateToAgregarColaborador = { navController.navigate("agregar_colaborador") }) }
                         composable("reportes") { ReportesScreen() }
                         composable("perfil") {
                             if (userRole == "ROLE_ADMIN") {
@@ -101,6 +101,7 @@ class LiderDashboardActivity : ComponentActivity() {
                         }
                         composable("actualizar_habilidades") { ActualizarHabilidadesScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("gestion_seguridad") { GestionSeguridadScreen(onNavigateBack = { navController.popBackStack() }) }
+                        composable("agregar_colaborador") { AgregarColaboradorScreen(onNavigateUp = { navController.popBackStack() }) }
                     }
                 }
             }

@@ -17,12 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun GestionLiderScreen(onNavigateToUpdateSkills: () -> Unit) {
+fun GestionLiderScreen(onNavigateToUpdateSkills: () -> Unit, onNavigateToAgregarColaborador: () -> Unit) {
     val team = listOf(
         TeamMember("Michael Johnson", "Frontend Developer", listOf("React" to 0.85f, "TypeScript" to 0.75f, "UI Design" to 0.6f)),
         TeamMember("Sarah Williams", "Backend Developer", listOf("Node.js" to 0.9f, "Python" to 0.6f)),
     )
-    var showMenu by remember { mutableStateOf(false) }
+    var showOtherOptions by remember { mutableStateOf(false) }
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         item {
@@ -31,26 +31,70 @@ fun GestionLiderScreen(onNavigateToUpdateSkills: () -> Unit) {
                     Text("Gestión de Habilidades", fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Box {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Button(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.fillMaxWidth()
+                            onClick = onNavigateToAgregarColaborador,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF003366))
                         ) {
-                            Text("Acciones de gestión")
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            Text("Agregar colaborador")
+                        }
+                        Button(
+                            onClick = { /* TODO: Carga masiva */ },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8623B5))
+                        ) {
+                            Text("Carga masiva")
                         }
 
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            DropdownMenuItem(text = { Text("Agregar colaborador") }, onClick = { /* TODO */ })
-                            DropdownMenuItem(text = { Text("Carga masiva") }, onClick = { /* TODO */ })
-                            DropdownMenuItem(text = { Text("Recomendaciones de capacitación") }, onClick = { /* TODO */ })
-                            DropdownMenuItem(text = { Text("Evaluar habilidades del equipo") }, onClick = { /* TODO */ })
-                            DropdownMenuItem(text = { Text("Filtrar habilidades por área") }, onClick = { /* TODO */ })
-                            DropdownMenuItem(text = { Text("Ver indicadores SLA") }, onClick = { /* TODO */ })
+                        Box {
+                            Button(
+                                onClick = { showOtherOptions = !showOtherOptions },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B))
+                            ) {
+                                Text("Otros")
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Desplegar otras opciones"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOtherOptions,
+                                onDismissRequest = { showOtherOptions = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Recomendaciones de capacitación") },
+                                    onClick = {
+                                        /* TODO */
+                                        showOtherOptions = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Evaluar habilidades del equipo") },
+                                    onClick = {
+                                        /* TODO */
+                                        showOtherOptions = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Filtrar habilidades por área") },
+                                    onClick = {
+                                        /* TODO */
+                                        showOtherOptions = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Ver indicadores SLA") },
+                                    onClick = {
+                                        /* TODO */
+                                        showOtherOptions = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
