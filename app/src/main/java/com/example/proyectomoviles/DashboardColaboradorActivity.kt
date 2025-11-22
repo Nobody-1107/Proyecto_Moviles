@@ -65,11 +65,15 @@ class DashboardColaboradorActivity : ComponentActivity() {
                 ) { innerPadding ->
                     NavHost(navController = navController, startDestination = "perfil", modifier = Modifier.padding(innerPadding)) {
                         composable("perfil") { 
-                            PerfilColaboradorScreen(onLogout = { 
-                                finish() 
-                            })
+                            PerfilColaboradorScreen(
+                                onLogout = { finish() },
+                                onNavigateToHabilidades = { navController.navigate("actualizar_habilidades") }
+                            )
                         }
                         composable("mi_equipo") { MiEquipoColaboradorScreen() }
+                        composable("actualizar_habilidades") {
+                            ActualizarHabilidadesScreen(onNavigateBack = { navController.popBackStack() })
+                        }
                     }
                 }
             }

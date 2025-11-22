@@ -14,104 +14,133 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectomoviles.viewmodel.ActualizarHabilidadesViewModel
 
 @Composable
-fun ActualizarHabilidadesScreen(onNavigateBack: () -> Unit) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // --- Back Button & Title ---
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                }
-                Text("Volver a Gestión", style = MaterialTheme.typography.titleMedium)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Detalle y Edición: Michael Johnson", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
+fun ActualizarHabilidadesScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: ActualizarHabilidadesViewModel = viewModel()
+) {
+    val colaborador by viewModel.colaborador.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
-        // --- Información del Colaborador ---
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Información del Colaborador", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    InfoRow("Nombre", "Michael Johnson")
-                    InfoRow("Rol Actual", "Frontend Developer")
-                    InfoRow("Departamento", "IT")
+    LaunchedEffect(Unit) {
+        viewModel.cargarDatosColaborador()
+    }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (error != null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Error: $error", color = Color.Red)
+        }
+        return
+    }
+
+    colaborador?.let { data ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // --- Back Button & Title ---
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                    Text("Volver a Gestión", style = MaterialTheme.typography.titleMedium)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Detalle y Edición: ${data.nombre}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
+
+            // --- Información del Colaborador ---
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Información del Colaborador", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        InfoRow("Nombre", data.nombre)
+                        InfoRow("Rol Actual", data.rol)
+                        InfoRow("Departamento", data.departamento)
+                    }
                 }
             }
-        }
 
-        // --- Skills Section ---
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Skills", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                        Button(onClick = { /* TODO */ }) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Añadir Skill")
+            // --- Skills Section ---
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Skills", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                            Button(onClick = { /* TODO */ }) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Añadir Skill")
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        data.skills.forEach { skill ->
+                            SkillEditItem(skill.nombre, skill.nivel)
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SkillEditItem("React", 0.85f)
-                    SkillEditItem("TypeScript", 0.75f)
-                    SkillEditItem("UI Design", 0.60f)
                 }
             }
-        }
 
-        // --- Certificaciones Section ---
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Certificaciones/Cursos", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                        Button(onClick = { /* TODO */ }) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Añadir")
+            // --- Certificaciones Section ---
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Certificaciones/Cursos", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                            Button(onClick = { /* TODO */ }) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Añadir")
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        data.certificaciones.forEach { cert ->
+                            CertificationItem(cert)
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CertificationItem("React Advanced Certification")
-                    CertificationItem("AWS Cloud Practitioner")
                 }
             }
-        }
 
-        // --- Disponibilidad & Guardar ---
-        item {
-            var disponible by remember { mutableStateOf(false) }
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)){
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Disponible para movilidad interna")
-                        Switch(checked = disponible, onCheckedChange = { disponible = it })
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { /* TODO: Save */ onNavigateBack() }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Guardar Cambios")
+            // --- Disponibilidad & Guardar ---
+            item {
+                var disponible by remember { mutableStateOf(data.disponible) }
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)){
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Disponible para movilidad interna")
+                            Switch(checked = disponible, onCheckedChange = { disponible = it })
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { /* TODO: Save logic */ onNavigateBack() }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Guardar Cambios")
+                        }
                     }
                 }
             }
@@ -177,4 +206,3 @@ private fun CertificationItem(name: String) {
         }
     }
 }
-

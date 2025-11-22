@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun PerfilColaboradorScreen(onLogout: () -> Unit) {
+fun PerfilColaboradorScreen(onLogout: () -> Unit, onNavigateToHabilidades: () -> Unit) {
     var isAvailableForChange by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -40,6 +41,21 @@ fun PerfilColaboradorScreen(onLogout: () -> Unit) {
                         }
                     }
                 }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+
+        // --- Nuevo Botón para ir a Editar Habilidades ---
+        item {
+            Button(
+                onClick = onNavigateToHabilidades,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Actualizar Habilidades y Certificaciones")
             }
         }
 
