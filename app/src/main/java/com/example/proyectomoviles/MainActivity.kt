@@ -47,6 +47,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+            // Ejemplo de llamada a la API (GET)
+            val apiService = com.example.proyectomoviles.network.ApiHelper.service
+            val call = apiService.getRequest("https://jsonplaceholder.typicode.com/posts/1") // Cambia la URL por la de tu backend
+            call.enqueue(object : retrofit2.Callback<Any> {
+                override fun onResponse(call: retrofit2.Call<Any>, response: retrofit2.Response<Any>) {
+                    if (response.isSuccessful) {
+                        // Procesa la respuesta aquí
+                        println("Respuesta: ${response.body()}")
+                    } else {
+                        println("Error en la respuesta: ${response.code()}")
+                    }
+                }
+                override fun onFailure(call: retrofit2.Call<Any>, t: Throwable) {
+                    println("Fallo en la llamada: ${t.message}")
+                }
+            })
     }
 }
 
