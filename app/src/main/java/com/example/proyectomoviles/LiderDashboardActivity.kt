@@ -93,7 +93,8 @@ class LiderDashboardActivity : ComponentActivity() {
                                 AdminPerfilScreen(
                                     onLogout = { finish() }, 
                                     onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") },
-                                    onNavigateToGestionSeguridad = { navController.navigate("gestion_seguridad") }
+                                    onNavigateToGestionSeguridad = { navController.navigate("gestion_seguridad") },
+                                    onNavigateToRegisterCollaborator = { navController.navigate("formulario_colaborador") }
                                 )
                             } else {
                                 LiderPerfilScreen(onLogout = { finish() }, onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") })
@@ -101,6 +102,7 @@ class LiderDashboardActivity : ComponentActivity() {
                         }
                         composable("actualizar_habilidades") { ActualizarHabilidadesScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("gestion_seguridad") { GestionSeguridadScreen(onNavigateBack = { navController.popBackStack() }) }
+                        composable("formulario_colaborador") { FormularioColaboradorScreen(onNavigateBack = { navController.popBackStack() }) }
                     }
                 }
             }

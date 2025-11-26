@@ -5,28 +5,27 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class TeamMember(
-    val name: String,
-    val title: String,
-    val skills: List<Pair<String, Float>>
-)
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectomoviles.viewmodel.MiEquipoViewModel
 
 @Composable
-fun MiEquipoColaboradorScreen() {
+fun MiEquipoColaboradorScreen(
+    viewModel: MiEquipoViewModel = viewModel()
+) {
     var showDialog by remember { mutableStateOf(false) }
+    val teamMembers by viewModel.teamMembers.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
-    val team = listOf(
-        TeamMember("Michael Johnson", "Frontend Developer", listOf("React" to 0.8f, "TypeScript" to 0.7f)),
-        TeamMember("Sarah Williams", "Backend Developer", listOf("Node.js" to 0.9f, "Python" to 0.6f)),
-        TeamMember("James Smith", "UI/UX Designer", listOf("Figma" to 0.95f, "Adobe XD" to 0.85f)),
-        TeamMember("Emily Davis", "QA Tester", listOf("Selenium" to 0.75f, "Jira" to 0.8f))
-    )
+    LaunchedEffect(Unit) {
+        viewModel.cargarEquipo()
+    }
 
     if (showDialog) {
         SugerirActualizacionDialog(
@@ -36,6 +35,20 @@ fun MiEquipoColaboradorScreen() {
                 println("Suggestion: $suggestion")
             }
         )
+    }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (error != null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Error al cargar equipo: $error", color = Color.Red)
+        }
+        // Aun así permitimos ver la lista vacía o reintentar si se quisiera
     }
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
@@ -49,22 +62,24 @@ fun MiEquipoColaboradorScreen() {
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        items(team) { member ->
+        items(teamMembers) { member ->
             Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(member.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(member.title, color = Color.Gray)
                     Spacer(modifier = Modifier.height(8.dp))
-                    member.skills.forEach { (skill, progress) ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(skill)
-                            Text("${(progress * 100).toInt()}% ")
+                    
+                    if (member.skills.isEmpty()) {
+                        Text("Sin habilidades registradas", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        member.skills.forEach { skillName ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(skillName)
+                                // Como el backend no devuelve % de progreso, quitamos la barra por ahora
+                                // o mostramos un valor fijo si se requiere
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
                         }
-                        LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier.fillMaxWidth().height(8.dp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
             }

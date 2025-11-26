@@ -1,17 +1,16 @@
 package com.example.proyectomoviles
 
-import androidx.compose.foundation.BorderStroke
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,15 +21,26 @@ fun ActualizarHabilidadesScreen(
     onNavigateBack: () -> Unit,
     viewModel: ActualizarHabilidadesViewModel = viewModel()
 ) {
-    val colaborador by viewModel.colaborador.collectAsState()
+    val profile by viewModel.profile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val updateSuccess by viewModel.updateSuccess.collectAsState()
+    val context = LocalContext.current
 
+    // Cargar datos al inicio
     LaunchedEffect(Unit) {
-        viewModel.cargarDatosColaborador()
+        viewModel.cargarDatosProfile()
     }
 
-    if (isLoading) {
+    // Escuchar si la actualización fue exitosa
+    LaunchedEffect(updateSuccess) {
+        if (updateSuccess) {
+            Toast.makeText(context, "Disponibilidad actualizada correctamente", Toast.LENGTH_SHORT).show()
+            onNavigateBack()
+        }
+    }
+
+    if (isLoading && profile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
@@ -39,170 +49,126 @@ fun ActualizarHabilidadesScreen(
 
     if (error != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Error: $error", color = Color.Red)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Error: $error", color = Color.Red)
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { viewModel.cargarDatosProfile() }) {
+                    Text("Reintentar")
+                }
+            }
         }
         return
     }
 
-    colaborador?.let { data ->
+    profile?.let { data ->
+        // Mantenemos el estado local del switch sincronizado con el perfil, 
+        // pero permitimos que el usuario lo cambie antes de guardar.
+        var disponible by remember(data.isAvailableForChange) { mutableStateOf(data.isAvailableForChange) }
+        var preferences by remember { mutableStateOf("") } // Campo nuevo para intereses
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- Back Button & Title ---
+            // --- Header ---
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                    Text("Volver a Gestión", style = MaterialTheme.typography.titleMedium)
+                    Text("Estado de Disponibilidad", style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Detalle y Edición: ${data.nombre}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Gestiona tu estado: ${data.fullName}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
 
-            // --- Información del Colaborador ---
+            // --- Tarjeta de Disponibilidad (Semáforo) ---
             item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Información del Colaborador", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        InfoRow("Nombre", data.nombre)
-                        InfoRow("Rol Actual", data.rol)
-                        InfoRow("Departamento", data.departamento)
-                    }
-                }
-            }
-
-            // --- Skills Section ---
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Skills", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                            Button(onClick = { /* TODO */ }) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Añadir Skill")
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        data.skills.forEach { skill ->
-                            SkillEditItem(skill.nombre, skill.nivel)
-                        }
-                    }
-                }
-            }
-
-            // --- Certificaciones Section ---
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Certificaciones/Cursos", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                            Button(onClick = { /* TODO */ }) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Añadir")
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        data.certificaciones.forEach { cert ->
-                            CertificationItem(cert)
-                        }
-                    }
-                }
-            }
-
-            // --- Disponibilidad & Guardar ---
-            item {
-                var disponible by remember { mutableStateOf(data.disponible) }
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)){
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (disponible) Color(0xFFE8F5E9) else Color(0xFFFFEBEE) // Verde claro o Rojo claro
+                    )
+                ) {
+                    Column(Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Disponible para movilidad interna")
-                            Switch(checked = disponible, onCheckedChange = { disponible = it })
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { /* TODO: Save logic */ onNavigateBack() }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Guardar Cambios")
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (disponible) "DISPONIBLE" else "NO DISPONIBLE",
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (disponible) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (disponible) 
+                                        "Estás visible para nuevos proyectos y ascensos." 
+                                    else 
+                                        "Actualmente no estás buscando cambios.",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            Switch(
+                                checked = disponible, 
+                                onCheckedChange = { disponible = it }
+                            )
                         }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall)
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
-        )
-    }
-}
-
-@Composable
-private fun SkillEditItem(name: String, initialValue: Float) {
-    var sliderValue by remember { mutableStateOf(initialValue) }
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical=4.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(name, fontWeight = FontWeight.Bold)
-                IconButton(onClick = { /* TODO: Delete */ }, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+            // --- Campo de Intereses (Nuevo) ---
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("¿Qué buscas?", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = preferences,
+                            onValueChange = { preferences = it },
+                            label = { Text("Ej: Proyectos de IA, Liderazgo, etc.") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = disponible // Solo habilitado si está disponible
+                        )
+                        if (!disponible) {
+                            Text(
+                                "Activa tu disponibilidad para indicar tus preferencias.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
-            Text("Nivel de dominio", style=MaterialTheme.typography.bodySmall)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("${(sliderValue * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
 
-@Composable
-private fun CertificationItem(name: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.weight(1f),
-            colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
-        )
-        IconButton(onClick = { /* TODO: Delete */ }) {
-            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+            // --- Botón Guardar ---
+            item {
+                Button(
+                    onClick = { 
+                        // Llamamos al ViewModel para guardar en el backend
+                        viewModel.guardarDisponibilidad(disponible)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading // Deshabilitar si está cargando
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Guardando...")
+                    } else {
+                        Text("Guardar Estado")
+                    }
+                }
+            }
         }
     }
 }

@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.sp
 fun AdminPerfilScreen(
     onLogout: () -> Unit, 
     onNavigateToUpdateSkills: () -> Unit,
-    onNavigateToGestionSeguridad: () -> Unit
+    onNavigateToGestionSeguridad: () -> Unit,
+    onNavigateToRegisterCollaborator: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -58,6 +59,10 @@ fun AdminPerfilScreen(
 
         item {
             Column {
+                Button(onClick = onNavigateToRegisterCollaborator, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0073E6))) {
+                    Text("Registrar Nuevo Colaborador")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = onNavigateToGestionSeguridad, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color.Magenta)) {
                     Text("Gestión de Seguridad y Autenticación")
                 }

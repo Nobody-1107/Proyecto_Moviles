@@ -3,6 +3,7 @@ package com.example.proyectomoviles
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -14,9 +15,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectomoviles.model.SecurityAlert
+import com.example.proyectomoviles.model.AccessLog
+import com.example.proyectomoviles.model.OwaspConfig
+import com.example.proyectomoviles.viewmodel.GestionSeguridadViewModel
 
 @Composable
-fun GestionSeguridadScreen(onNavigateBack: () -> Unit) {
+fun GestionSeguridadScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: GestionSeguridadViewModel = viewModel()
+) {
+    val stats by viewModel.stats.collectAsState()
+    val alerts by viewModel.alerts.collectAsState()
+    val accessLogs by viewModel.accessLogs.collectAsState()
+    val owaspConfig by viewModel.owaspConfig.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.cargarDatosSeguridad()
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -46,6 +66,14 @@ fun GestionSeguridadScreen(onNavigateBack: () -> Unit) {
                 }
             }
         }
+        
+        if (isLoading && stats == null) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
 
         // --- Admin Panel ---
         item {
@@ -57,46 +85,52 @@ fun GestionSeguridadScreen(onNavigateBack: () -> Unit) {
                 ) {
                     Column {
                         Text("Panel de administrador", fontWeight = FontWeight.Bold)
-                        Text("admin@empresa.com")
+                        Text("admin@empresa.com") // Este email sigue hardcodeado ya que es el usuario logueado local
                     }
                     Chip("Admin", Color(0xFFD0BCFF))
                 }
             }
         }
         
-        // --- Access stats ---
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F3E8))
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Accesos exitosos")
-                        Text("4", style = MaterialTheme.typography.headlineMedium)
+        // --- Access stats (Datos reales del backend) ---
+        if (stats != null) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F3E8))
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text("Accesos exitosos")
+                            Text(stats!!.successCount.toString(), style = MaterialTheme.typography.headlineMedium)
+                        }
                     }
-                }
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Intentos fallidos")
-                        Text("3", style = MaterialTheme.typography.headlineMedium, color = Color.Red)
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text("Intentos fallidos")
+                            Text(stats!!.failedCount.toString(), style = MaterialTheme.typography.headlineMedium, color = Color.Red)
+                        }
                     }
                 }
             }
+        } else if (!isLoading) {
+            item { Text("No se pudieron cargar estadísticas.", color = Color.Gray) }
         }
 
         // --- Alertas de seguridad ---
         item {
             Text("Alertas de seguridad", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
         }
-        item {
-            SecurityAlertItem("Múltiples intentos de acceso fallidos desde IP 45.33.22.11", "14/11, 21:19 - Usuario: admin", true)
-        }
-        item {
-            SecurityAlertItem("Intento de acceso con credenciales inexistentes", "14/11, 21:14 - Usuario: unknown_user", false)
+        
+        if (alerts.isEmpty() && !isLoading) {
+             item { Text("No hay alertas activas.", style = MaterialTheme.typography.bodySmall) }
+        } else {
+            items(alerts) { alert ->
+                SecurityAlertItem(alert)
+            }
         }
 
         // --- Historial de accesos ---
@@ -113,10 +147,14 @@ fun GestionSeguridadScreen(onNavigateBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    AccessLogItem("admin@empresa.com", "14/11, 21:34", "192.168.1.100", "Chrome - Windows", true)
-                    AccessLogItem("james.smith@empresa.com", "14/11, 21:24", "192.168.1.101", "Safari - iPhone", true)
-                    AccessLogItem("hacker@malicious.com", "14/11, 21:20", "10.0.0.5", "Unknown", false)
-
+                    
+                    if (accessLogs.isEmpty() && !isLoading) {
+                        Text("Sin registros recientes.", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        accessLogs.forEach { log ->
+                            AccessLogItem(log)
+                        }
+                    }
                 }
             }
         }
@@ -125,34 +163,35 @@ fun GestionSeguridadScreen(onNavigateBack: () -> Unit) {
         item {
             Text("Configuración OWASP", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
         }
-        item {
-            OwaspConfigItem("Protección contra XSS", "Sanitización de entradas y validación de contenido HTML", true)
-        }
-        item {
-            OwaspConfigItem("Validación SQL Injection", "Prevención de inyección SQL mediante prepared statements", true)
-        }
-        item {
-            OwaspConfigItem("Prevención CSRF", "Tokens anti-CSRF en formularios y peticiones", true)
-        }
-        item {
-            OwaspConfigItem("Autenticación robusta", "JWT con expiración, refresh tokens y blacklist", true)
-        }
-        item {
-            OwaspConfigItem("Rate Limiting", "Límite de peticiones por IP (100/hora)", true)
-        }
-         item {
-            OwaspConfigItem("Security Headers", "HSTS, X-Frame-Options, CSP, X-Content-Type", true)
+        
+        if (owaspConfig.isEmpty() && !isLoading) {
+            item { Text("No hay configuraciones disponibles.", style = MaterialTheme.typography.bodySmall) }
+        } else {
+            items(owaspConfig) { config ->
+                OwaspConfigItem(
+                    config = config, 
+                    onToggle = { isEnabled -> 
+                        viewModel.actualizarConfiguracionOwasp(config.id, isEnabled) 
+                    }
+                )
+            }
         }
 
         // --- Cumplimiento OWASP ---
-        item {
-            Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cumplimiento OWASP Top 10")
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text("6 de 6 controles activos", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        if (stats != null) {
+            item {
+                Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)) {
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cumplimiento OWASP Top 10")
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            "${stats!!.owaspScore} de ${stats!!.totalControls} controles activos", 
+                            color = MaterialTheme.colorScheme.primary, 
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -160,21 +199,25 @@ fun GestionSeguridadScreen(onNavigateBack: () -> Unit) {
 }
 
 @Composable
-private fun SecurityAlertItem(title: String, subtitle: String, isCritical: Boolean) {
-    val borderColor = if (isCritical) Color(0xFFD32F2F) else Color(0xFFFFA000)
-    val icon = if (isCritical) Icons.Default.WarningAmber else Icons.Default.Info
-    Card(border = BorderStroke(1.dp, borderColor)) {
+private fun SecurityAlertItem(alert: SecurityAlert) {
+    val borderColor = if (alert.isCritical) Color(0xFFD32F2F) else Color(0xFFFFA000)
+    val icon = if (alert.isCritical) Icons.Default.WarningAmber else Icons.Default.Info
+    
+    Card(
+        border = BorderStroke(1.dp, borderColor),
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, contentDescription = null, tint = borderColor)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(title, fontWeight = FontWeight.Bold)
+                Text(alert.title, fontWeight = FontWeight.Bold)
             }
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 32.dp))
+            Text("${alert.timestamp} - ${alert.description}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 32.dp))
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { /* TODO */ }, colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)) {
-                    Text("Bloquear cuenta", color = Color.Red)
+                    Text("Bloquear", color = Color.Red)
                 }
                 Button(onClick = { /* TODO */ }) {
                     Text("Resolver")
@@ -185,34 +228,40 @@ private fun SecurityAlertItem(title: String, subtitle: String, isCritical: Boole
 }
 
 @Composable
-private fun AccessLogItem(user: String, date: String, ip: String, device: String, success: Boolean) {
-    val borderColor = if(success) Color(0xFF388E3C) else Color(0xFFD32F2F)
-    val statusText = if(success) "Éxito" else "Fallido"
+private fun AccessLogItem(log: AccessLog) {
+    val borderColor = if(log.isSuccess) Color(0xFF388E3C) else Color(0xFFD32F2F)
+    val statusText = if(log.isSuccess) "Éxito" else "Fallido"
     
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), border = BorderStroke(1.dp, borderColor)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(user, fontWeight = FontWeight.Bold)
-                Chip(statusText, if(success) Color(0xFFC8E6C9) else Color(0xFFFFCDD2))
+                Text(log.userEmail, fontWeight = FontWeight.Bold)
+                Chip(statusText, if(log.isSuccess) Color(0xFFC8E6C9) else Color(0xFFFFCDD2))
             }
-            Text("Fecha: $date", style = MaterialTheme.typography.bodySmall)
-            Text("IP: $ip", style = MaterialTheme.typography.bodySmall)
-            Text("Dispositivo: $device", style = MaterialTheme.typography.bodySmall)
+            Text("Fecha: ${log.timestamp}", style = MaterialTheme.typography.bodySmall)
+            Text("IP: ${log.ipAddress}", style = MaterialTheme.typography.bodySmall)
+            Text("Dispositivo: ${log.device}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
 
 @Composable
-private fun OwaspConfigItem(title: String, description: String, enabled: Boolean) {
-    var isChecked by remember { mutableStateOf(enabled) }
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun OwaspConfigItem(config: OwaspConfig, onToggle: (Boolean) -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Column(Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Switch(checked = isChecked, onCheckedChange = { isChecked = it })
+                Text(config.controlName, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Switch(
+                    checked = config.isEnabled, 
+                    onCheckedChange = { onToggle(it) }
+                )
             }
-            Text(description, style = MaterialTheme.typography.bodySmall)
-            Chip("Activo", Color(0xFFC8E6C9))
+            Text(config.description, style = MaterialTheme.typography.bodySmall)
+            if (config.isEnabled) {
+                Chip("Activo", Color(0xFFC8E6C9))
+            } else {
+                Chip("Inactivo", Color(0xFFFFCDD2))
+            }
         }
     }
 }

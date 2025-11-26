@@ -1,13 +1,17 @@
 package com.example.proyectomoviles
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,14 +56,33 @@ fun LiderPerfilScreen(onLogout: () -> Unit, onNavigateToUpdateSkills: () -> Unit
         }
 
         item {
-            Column {
-                Button(onClick = onNavigateToUpdateSkills, modifier = Modifier.fillMaxWidth()) {
-                    Text("Actualizar Habilidades y Certificaciones")
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToUpdateSkills() },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Edit, contentDescription = null)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("Gestionar Disponibilidad", fontWeight = FontWeight.Bold)
+                            Text("Ver estado e intereses", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-                    Text("Cerrar Sesión")
-                }
+            }
+        }
+
+        item {
+            OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
+                Text("Cerrar Sesión")
             }
         }
         
