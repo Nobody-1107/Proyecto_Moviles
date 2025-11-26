@@ -1,12 +1,9 @@
 package com.example.proyectomoviles
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,12 +19,14 @@ fun ActualizarHabilidadesScreen(
     onNavigateBack: () -> Unit,
     viewModel: ActualizarHabilidadesViewModel = viewModel()
 ) {
-    val colaborador by viewModel.colaborador.collectAsState()
+    // Use the new 'profile' StateFlow from the ViewModel
+    val profile by viewModel.profile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    // Call the updated function to load data
     LaunchedEffect(Unit) {
-        viewModel.cargarDatosColaborador()
+        viewModel.cargarDatosProfile()
     }
 
     if (isLoading) {
@@ -44,7 +43,8 @@ fun ActualizarHabilidadesScreen(
         return
     }
 
-    colaborador?.let { data ->
+    // Use the new 'profile' object
+    profile?.let { data ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -60,73 +60,28 @@ fun ActualizarHabilidadesScreen(
                     Text("Volver a Gestión", style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Detalle y Edición: ${data.nombre}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                // Use properties from the 'Profile' model
+                Text("Detalle y Edición: ${data.fullName}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
 
-            // --- Información del Colaborador ---
+            // --- Información del Perfil ---
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Información del Colaborador", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("Información del Perfil", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(16.dp))
-                        InfoRow("Nombre", data.nombre)
-                        InfoRow("Rol Actual", data.rol)
-                        InfoRow("Departamento", data.departamento)
-                    }
-                }
-            }
-
-            // --- Skills Section ---
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Skills", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                            Button(onClick = { /* TODO */ }) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Añadir Skill")
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        data.skills.forEach { skill ->
-                            SkillEditItem(skill.nombre, skill.nivel)
-                        }
-                    }
-                }
-            }
-
-            // --- Certificaciones Section ---
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Certificaciones/Cursos", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                            Button(onClick = { /* TODO */ }) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Añadir")
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        data.certificaciones.forEach { cert ->
-                            CertificationItem(cert)
-                        }
+                        // Use properties from the 'Profile' model
+                        InfoRow("Nombre Completo", data.fullName)
+                        InfoRow("Cargo", data.position)
+                        InfoRow("Rol", data.role)
                     }
                 }
             }
 
             // --- Disponibilidad & Guardar ---
             item {
-                var disponible by remember { mutableStateOf(data.disponible) }
+                // Use 'isAvailableForChange' from the 'Profile' model
+                var disponible by remember { mutableStateOf(data.isAvailableForChange) }
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)){
                         Row(
@@ -159,50 +114,5 @@ private fun InfoRow(label: String, value: String) {
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
         )
-    }
-}
-
-@Composable
-private fun SkillEditItem(name: String, initialValue: Float) {
-    var sliderValue by remember { mutableStateOf(initialValue) }
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical=4.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(name, fontWeight = FontWeight.Bold)
-                IconButton(onClick = { /* TODO: Delete */ }, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
-                }
-            }
-            Text("Nivel de dominio", style=MaterialTheme.typography.bodySmall)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("${(sliderValue * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
-private fun CertificationItem(name: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.weight(1f),
-            colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface)
-        )
-        IconButton(onClick = { /* TODO: Delete */ }) {
-            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
-        }
     }
 }
