@@ -1,20 +1,24 @@
 package com.example.proyectomoviles
 
-import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectomoviles.model.Skill
 import com.example.proyectomoviles.viewmodel.CrearColaboradorViewModel
+import com.example.proyectomoviles.viewmodel.SkillConGrado
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,155 +26,293 @@ fun FormularioColaboradorScreen(
     onNavigateBack: () -> Unit,
     viewModel: CrearColaboradorViewModel = viewModel()
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var position by remember { mutableStateOf("") }
-    var departmentIdInput by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("Colaborador") }
-    
-    // Opciones de rol simples para el selector
-    val roles = listOf("Colaborador", "Lider", "Admin")
-    var isRoleExpanded by remember { mutableStateOf(false) }
-
+    val fullName by viewModel.fullName.collectAsState()
+    val position by viewModel.position.collectAsState()
+    val selectedRole by viewModel.selectedRole.collectAsState()
+    val departments by viewModel.departments.collectAsState()
+    val selectedDepartment by viewModel.selectedDepartment.collectAsState()
+    val allSkills by viewModel.allSkills.collectAsState()
+    val selectedSkills by viewModel.selectedSkills.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val createSuccess by viewModel.createSuccess.collectAsState()
     val error by viewModel.error.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(createSuccess) {
         if (createSuccess) {
-            Toast.makeText(context, "Colaborador creado exitosamente", Toast.LENGTH_LONG).show()
-            viewModel.resetSuccess()
             onNavigateBack()
         }
     }
 
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                }
-                Text("Registrar Nuevo Colaborador", fontWeight = FontWeight.Bold)
-            }
+            Text("Registrar Nuevo Colaborador", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(16.dp))
         }
+
+        item {
+            OutlinedTextField(
+                value = fullName,
+                onValueChange = viewModel::onFullNameChange,
+                label = { Text("Nombre Completo") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         
-        if (error != null) {
+        item {
+            OutlinedTextField(
+                value = position,
+                onValueChange = viewModel::onPositionChange,
+                label = { Text("Puesto / Cargo") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item {
+            DepartmentDropdown(
+                departments = departments,
+                selectedDepartment = selectedDepartment,
+                onDepartmentSelected = viewModel::onDepartmentSelected
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        
+        item {
+            RoleSelector(
+                selectedRole = selectedRole,
+                onRoleSelected = viewModel::onRoleSelected
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        item {
+            SkillSelector(
+                allSkills = allSkills,
+                selectedSkills = selectedSkills,
+                onSkillAdded = viewModel::addSkill
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        items(selectedSkills) { skillConGrado ->
+            SelectedSkillItem(
+                skillConGrado = skillConGrado,
+                onGradeChange = { newGrade ->
+                    viewModel.updateSkillGrade(skillConGrado.skill.id, newGrade)
+                },
+                onRemove = {
+                    viewModel.removeSkill(skillConGrado.skill.id)
+                }
+            )
+        }
+        
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = viewModel::crearColaborador,
+                enabled = !isLoading && fullName.isNotBlank() && position.isNotBlank() && selectedDepartment != null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Registrar Colaborador")
+                }
+            }
+        }
+        
+        error?.let {
             item {
-                Text("Error: $error", color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
             }
         }
+    }
+}
 
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Información Personal", fontWeight = FontWeight.Bold)
-                    OutlinedTextField(
-                        value = fullName,
-                        onValueChange = { fullName = it },
-                        label = { Text("Nombre Completo") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = position,
-                        onValueChange = { position = it },
-                        label = { Text("Cargo / Puesto") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+
+@Composable
+private fun RoleSelector(
+    selectedRole: String,
+    onRoleSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val roles = listOf("collaborator", "leader", "admin")
+    val interactionSource = remember { MutableInteractionSource() }
+
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collectLatest {
+            if (it is PressInteraction.Release) {
+                expanded = !expanded
             }
         }
+    }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
-
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Información Organizacional", fontWeight = FontWeight.Bold)
-                    
-                    // Departamento (ID manual por ahora)
-                    OutlinedTextField(
-                        value = departmentIdInput,
-                        onValueChange = { departmentIdInput = it },
-                        label = { Text("ID de Departamento (Número)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Selector de Rol
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        ExposedDropdownMenuBox(
-                            expanded = isRoleExpanded,
-                            onExpandedChange = { isRoleExpanded = !isRoleExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = role,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Rol en el Sistema") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRoleExpanded) },
-                                modifier = Modifier.menuAnchor().fillMaxWidth()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = isRoleExpanded,
-                                onDismissRequest = { isRoleExpanded = false }
-                            ) {
-                                roles.forEach { selection ->
-                                    DropdownMenuItem(
-                                        text = { Text(selection) },
-                                        onClick = {
-                                            role = selection
-                                            isRoleExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(24.dp)) }
-
-        item {
-            Column {
-                Button(
+    Box {
+        OutlinedTextField(
+            value = selectedRole,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Rol en el Sistema") },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Dropdown") },
+            modifier = Modifier.fillMaxWidth(),
+            interactionSource = interactionSource
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            roles.forEach { role ->
+                DropdownMenuItem(
+                    text = { Text(role) },
                     onClick = {
-                        if (fullName.isNotBlank() && position.isNotBlank()) {
-                            val deptId = departmentIdInput.toIntOrNull()
-                            viewModel.crearColaborador(
-                                fullName = fullName,
-                                position = position,
-                                departmentId = deptId,
-                                role = role
-                            )
-                        } else {
-                            Toast.makeText(context, "Complete nombre y cargo", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Guardando...")
-                    } else {
-                        Text("Guardar Colaborador")
+                        onRoleSelected(role)
+                        expanded = false
                     }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
-                ) {
-                    Text("Cancelar")
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DepartmentDropdown(
+    departments: List<com.example.proyectomoviles.model.Department>,
+    selectedDepartment: com.example.proyectomoviles.model.Department?,
+    onDepartmentSelected: (com.example.proyectomoviles.model.Department) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collectLatest {
+            if (it is PressInteraction.Release) {
+                expanded = !expanded
+            }
+        }
+    }
+
+    Box {
+        OutlinedTextField(
+            value = selectedDepartment?.name ?: "Seleccionar Departamento",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Departamento") },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Dropdown") },
+            modifier = Modifier.fillMaxWidth(),
+            interactionSource = interactionSource
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            departments.forEach { department ->
+                DropdownMenuItem(
+                    text = { Text(department.name) },
+                    onClick = {
+                        onDepartmentSelected(department)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkillSelector(
+    allSkills: List<Skill>,
+    selectedSkills: List<SkillConGrado>,
+    onSkillAdded: (Skill) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val availableSkills = allSkills.filter { skill -> selectedSkills.none { it.skill.id == skill.id } }
+    val interactionSource = remember { MutableInteractionSource() }
+    
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collectLatest {
+            if (it is PressInteraction.Release) {
+                expanded = !expanded
+            }
+        }
+    }
+
+    Box {
+        OutlinedTextField(
+            value = if (availableSkills.isNotEmpty()) "Añadir Skill" else "No hay más skills",
+            onValueChange = {},
+            readOnly = true,
+            enabled = availableSkills.isNotEmpty(),
+            label = { Text("Skills") },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Dropdown") },
+            modifier = Modifier.fillMaxWidth(),
+            interactionSource = interactionSource
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            availableSkills.forEach { skill ->
+                DropdownMenuItem(
+                    text = { Text(skill.name) },
+                    onClick = {
+                        onSkillAdded(skill)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectedSkillItem(
+    skillConGrado: SkillConGrado,
+    onGradeChange: (Int) -> Unit,
+    onRemove: () -> Unit
+) {
+    var gradeMenuExpanded by remember { mutableStateOf(false) }
+    val gradeLabels = listOf("Básico", "Intermedio", "Avanzado")
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(skillConGrado.skill.name, modifier = Modifier.weight(1f))
+
+        Box {
+            OutlinedButton(onClick = { gradeMenuExpanded = true }) {
+                Text(gradeLabels[skillConGrado.grade - 1])
+                Icon(Icons.Default.ArrowDropDown, "Dropdown")
+            }
+            DropdownMenu(
+                expanded = gradeMenuExpanded,
+                onDismissRequest = { gradeMenuExpanded = false }
+            ) {
+                gradeLabels.forEachIndexed { index, label ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            onGradeChange(index + 1)
+                            gradeMenuExpanded = false
+                        }
+                    )
                 }
             }
+        }
+
+        IconButton(onClick = onRemove) {
+            Icon(Icons.Default.Clear, "Remover Skill")
         }
     }
 }

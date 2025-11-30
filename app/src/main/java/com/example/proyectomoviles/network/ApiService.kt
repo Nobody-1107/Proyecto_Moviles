@@ -53,10 +53,16 @@ interface ApiService {
     @GET("api/profileskills/by-profile/{profileId}")
     suspend fun getProfileSkills(@Path("profileId") profileId: String): List<ProfileSkill>
 
+    @POST("api/profileskills")
+    suspend fun createProfileSkill(@Body profileSkill: ProfileSkill)
+
     // VACANCY SKILLS
     @GET("api/vacancyskills/by-vacancy/{vacancyId}")
     suspend fun getVacancySkills(@Path("vacancyId") vacancyId: Int): List<VacancySkill>
     
+    @POST("api/vacancyskills")
+    suspend fun createVacancySkill(@Body vacancySkill: VacancySkill)
+
     // --- SECURITY ENDPOINTS ---
     
     @GET("api/security/stats")

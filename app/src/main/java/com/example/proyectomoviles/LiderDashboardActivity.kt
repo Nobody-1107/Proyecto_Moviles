@@ -11,9 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.proyectomoviles.ui.theme.ProyectoMovilesTheme
 
 class LiderDashboardActivity : ComponentActivity() {
@@ -43,7 +45,7 @@ class LiderDashboardActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Filled.Work, contentDescription = "Demanda") },
                                 label = { Text("Demanda") },
                                 selected = selectedItem == "demanda",
-                                onClick = { 
+                                onClick = {
                                     selectedItem = "demanda"
                                     navController.navigate("demanda")
                                 }
@@ -52,7 +54,7 @@ class LiderDashboardActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Filled.Group, contentDescription = "Gestión") },
                                 label = { Text("Gestión") },
                                 selected = selectedItem == "gestion",
-                                onClick = { 
+                                onClick = {
                                     selectedItem = "gestion"
                                     navController.navigate("gestion")
                                 }
@@ -61,7 +63,7 @@ class LiderDashboardActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Filled.BarChart, contentDescription = "Reportes") },
                                 label = { Text("Reportes") },
                                 selected = selectedItem == "reportes",
-                                onClick = { 
+                                onClick = {
                                     selectedItem = "reportes"
                                     navController.navigate("reportes")
                                 }
@@ -70,7 +72,7 @@ class LiderDashboardActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Filled.Person, contentDescription = "Perfil") },
                                 label = { Text("Perfil") },
                                 selected = selectedItem == "perfil",
-                                onClick = { 
+                                onClick = {
                                     selectedItem = "perfil"
                                     navController.navigate("perfil")
                                 }
@@ -84,14 +86,38 @@ class LiderDashboardActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     NavHost(navController = navController, startDestination = "demanda", Modifier.padding(innerPadding)) {
-                        composable("demanda") { DemandaLiderScreen(onNavigateToCreateVacante = { navController.navigate("formulario_vacante") }) }
+                        composable("demanda") {
+                            DemandaLiderScreen(
+                                onNavigateToCreateVacante = { navController.navigate("formulario_vacante") },
+                                onNavigateToDetail = { vacancyId ->
+                                    navController.navigate("vacancyDetail/$vacancyId")
+                                }
+                            )
+                        }
+                        composable(
+                            "vacancyDetail/{vacancyId}",
+                            arguments = listOf(navArgument("vacancyId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val vacancyId = backStackEntry.arguments?.getInt("vacancyId") ?: 0
+                            VacancyDetailScreen(vacancyId = vacancyId)
+                        }
                         composable("formulario_vacante") { FormularioVacanteScreen(onNavigateBack = { navController.popBackStack() }) }
-                        composable("gestion") { GestionLiderScreen(onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") }) }
+                        
+                        // --- CORRECCIÓN AQUÍ ---
+                        composable("gestion") { 
+                            GestionLiderScreen(
+                                onNavigateToRegisterCollaborator = { navController.navigate("formulario_colaborador") },
+                                onNavigateToCollaboratorDetail = { /* TODO: Navegar a la pantalla de detalle del colaborador */ }
+                            ) 
+                        }
+                        // --- FIN DE LA CORRECCIÓN ---
+
+                        composable("formulario_colaborador") { FormularioColaboradorScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("reportes") { ReportesScreen() }
                         composable("perfil") {
                             if (userRole == "ROLE_ADMIN") {
                                 AdminPerfilScreen(
-                                    onLogout = { finish() }, 
+                                    onLogout = { finish() },
                                     onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") },
                                     onNavigateToGestionSeguridad = { navController.navigate("gestion_seguridad") },
                                     onNavigateToRegisterCollaborator = { navController.navigate("formulario_colaborador") }
@@ -102,7 +128,6 @@ class LiderDashboardActivity : ComponentActivity() {
                         }
                         composable("actualizar_habilidades") { ActualizarHabilidadesScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("gestion_seguridad") { GestionSeguridadScreen(onNavigateBack = { navController.popBackStack() }) }
-                        composable("formulario_colaborador") { FormularioColaboradorScreen(onNavigateBack = { navController.popBackStack() }) }
                     }
                 }
             }

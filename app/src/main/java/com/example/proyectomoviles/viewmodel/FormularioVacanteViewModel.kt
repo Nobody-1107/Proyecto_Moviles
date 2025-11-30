@@ -3,28 +3,30 @@ package com.example.proyectomoviles.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyectomoviles.model.Department
-import com.example.proyectomoviles.model.Profile
-import com.example.proyectomoviles.model.ProfileSkill
 import com.example.proyectomoviles.model.Skill
+import com.example.proyectomoviles.model.Vacancy
+import com.example.proyectomoviles.model.VacancySkill
 import com.example.proyectomoviles.network.ApiService
 import com.example.proyectomoviles.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 
-class CrearColaboradorViewModel : ViewModel() {
+// Modelo de UI para manejar un skill con su grado en el formulario
+data class SkillConGrado(
+    val skill: Skill,
+    var grade: Int = 1
+)
+
+class FormularioVacanteViewModel : ViewModel() {
 
     // --- Estados del Formulario ---
-    private val _fullName = MutableStateFlow("")
-    val fullName: StateFlow<String> = _fullName.asStateFlow()
+    private val _title = MutableStateFlow("")
+    val title: StateFlow<String> = _title.asStateFlow()
 
-    private val _position = MutableStateFlow("")
-    val position: StateFlow<String> = _position.asStateFlow()
-    
-    private val _selectedRole = MutableStateFlow("collaborator")
-    val selectedRole: StateFlow<String> = _selectedRole.asStateFlow()
+    private val _description = MutableStateFlow("")
+    val description: StateFlow<String> = _description.asStateFlow()
 
     private val _selectedDepartment = MutableStateFlow<Department?>(null)
     val selectedDepartment: StateFlow<Department?> = _selectedDepartment.asStateFlow()
@@ -61,7 +63,7 @@ class CrearColaboradorViewModel : ViewModel() {
                 _departments.value = api.getDepartments()
                 _allSkills.value = api.getSkills()
             } catch (e: Exception) {
-                _error.value = "Error al cargar datos: ${e.message}"
+                _error.value = "Error al cargar datos iniciales: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -69,9 +71,8 @@ class CrearColaboradorViewModel : ViewModel() {
     }
 
     // --- Acciones del usuario ---
-    fun onFullNameChange(newName: String) { _fullName.value = newName }
-    fun onPositionChange(newPosition: String) { _position.value = newPosition }
-    fun onRoleSelected(role: String) { _selectedRole.value = role }
+    fun onTitleChange(newTitle: String) { _title.value = newTitle }
+    fun onDescriptionChange(newDescription: String) { _description.value = newDescription }
     fun onDepartmentSelected(department: Department) { _selectedDepartment.value = department }
 
     fun addSkill(skill: Skill) {
@@ -90,7 +91,7 @@ class CrearColaboradorViewModel : ViewModel() {
         }
     }
 
-    fun crearColaborador() {
+    fun crearVacante() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -99,39 +100,34 @@ class CrearColaboradorViewModel : ViewModel() {
             try {
                 val api = RetrofitClient.instance.create(ApiService::class.java)
 
-                // 1. Preparamos la lista de Skills
-                // Convertimos los datos de la UI (SkillConGrado) a datos de API (ProfileSkill)
+                // 1. Preparamos la lista de Skills para enviarla JUNTO con la vacante.
+                // Convertimos tu modelo de UI (SkillConGrado) al modelo de Datos (VacancySkill)
                 val skillsParaEnviar = _selectedSkills.value.map { skillUi ->
-                    ProfileSkill(
-                        // OJO: Enviamos un ID "falso" o vacío temporalmente.
-                        // El Backend ignorará este valor y le pondrá el UUID correcto
-                        // una vez que genere el perfil. Ponemos puros ceros para cumplir el formato UUID.
-                        profileId = "00000000-0000-0000-0000-000000000000",
+                    VacancySkill(
+                        vacancyId = 0, // Se manda 0, el backend le asignará el ID correcto automáticamente
                         skillId = skillUi.skill.id,
                         grado = skillUi.grade
                     )
                 }
 
-                // 2. Preparamos el Perfil completo (Padre + Hijos)
-                val profileToCreate = Profile(
-                    id = null, // ¡IMPORTANTE! Enviamos null para que Supabase genere el UUID
-                    fullName = _fullName.value,
-                    position = _position.value,
+                // 2. Creamos el objeto Vacancy INCLUYENDO la lista de skills
+                val vacancyToCreate = Vacancy(
+                    id = 0,
+                    title = _title.value,
+                    description = _description.value,
                     departmentId = _selectedDepartment.value?.id,
-                    role = _selectedRole.value,
-                    isAvailableForChange = false, // O true, según tu lógica de negocio
-                    profileSkills = skillsParaEnviar // <--- Aquí enviamos la lista anidada
+                    status = "open", // Ojo: Asegúrate de mandar el status que espera tu BD ("open" o "Abierta")
+                    vacancySkills = skillsParaEnviar // <--- AQUÍ ESTÁ EL CAMBIO CLAVE
                 )
 
-                // 3. Hacemos UNA SOLA llamada al servidor
-                // El backend recibirá esto, creará el perfil, generará el UUID,
-                // y luego guardará los skills automáticamente.
-                api.createProfile(profileToCreate)
+                // 3. Hacemos UNA SOLA llamada al API
+                api.createVacancy(vacancyToCreate)
 
+                // Si no lanza error, es éxito
                 _createSuccess.value = true
 
             } catch (e: Exception) {
-                _error.value = "Error al crear el colaborador: ${e.localizedMessage}"
+                _error.value = "Error al crear la vacante: ${e.localizedMessage}"
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false

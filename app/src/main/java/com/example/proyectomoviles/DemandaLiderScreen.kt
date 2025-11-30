@@ -12,10 +12,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyectomoviles.viewmodel.DemandaLiderViewModel
+import com.example.proyectomoviles.viewmodel.VacancyUi
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DemandaLiderScreen(
     onNavigateToCreateVacante: () -> Unit,
+    onNavigateToDetail: (Int) -> Unit,
     viewModel: DemandaLiderViewModel = viewModel()
 ) {
     val vacancies by viewModel.vacancies.collectAsState()
@@ -62,36 +65,45 @@ fun DemandaLiderScreen(
         }
 
         items(vacancies) { vacante ->
-            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(vacante.title, fontWeight = FontWeight.Bold)
-                    Text(vacante.department, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    if (vacante.skills.isNotEmpty()) {
-                        Text("Skills Requeridos:", fontWeight = FontWeight.Medium)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        // Row horizontal con scroll si son muchos skills, o un FlowRow si tuvieramos la dependencia
-                        Row {
-                            vacante.skills.take(3).forEach { skill -> // Limitamos visualmente
-                                Chip(label = { Text(skill) }, modifier = Modifier.padding(end = 4.dp))
-                            }
-                            if (vacante.skills.size > 3) {
-                                Chip(label = { Text("+${vacante.skills.size - 3}") }, modifier = Modifier.padding(end = 4.dp))
-                            }
-                        }
-                    } else {
-                        Text("Sin skills requeridos", style = MaterialTheme.typography.bodySmall)
+            VacancyCard(
+                vacante = vacante,
+                onClick = { onNavigateToDetail(vacante.id) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VacancyCard(vacante: VacancyUi, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(vacante.title, fontWeight = FontWeight.Bold)
+            Text(vacante.department, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (vacante.skills.isNotEmpty()) {
+                Text("Skills Requeridos:", fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row {
+                    vacante.skills.take(3).forEach { skill ->
+                        Chip(label = { Text(skill) }, modifier = Modifier.padding(end = 4.dp))
                     }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Estado: ${vacante.status}")
-                    
-                    // Opcional: cobertura visual simulada
-                    // Text("Cobertura: ${(vacante.coverage * 100).toInt()}%")
-                    // LinearProgressIndicator(progress = { vacante.coverage }, modifier = Modifier.fillMaxWidth())
+                    if (vacante.skills.size > 3) {
+                        Chip(label = { Text("+${vacante.skills.size - 3}") }, modifier = Modifier.padding(end = 4.dp))
+                    }
                 }
+            } else {
+                Text("Sin skills requeridos", style = MaterialTheme.typography.bodySmall)
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Estado: ${vacante.status}")
         }
     }
 }

@@ -35,6 +35,11 @@
             android:name=".LiderDashboardActivity"
             android:label="Dashboard Lider"
             android:theme="@style/Theme.ProyectoMoviles" />
+            
+        <activity
+            android:name=".CandidateDetailActivity"
+            android:label="Análisis de Brecha"
+            android:theme="@style/Theme.ProyectoMoviles" />
 
     </application>
 

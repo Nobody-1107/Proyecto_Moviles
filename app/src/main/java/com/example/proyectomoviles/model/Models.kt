@@ -3,15 +3,21 @@ package com.example.proyectomoviles.model
 import com.google.gson.annotations.SerializedName
 
 data class Profile(
-    @SerializedName("id") val id: String,
+    // CAMBIO 1: El ID debe ser String nullable (String?) y tener valor por defecto null.
+    // Así, cuando crees un perfil nuevo, no envías nada y el Backend genera el UUID.
+    @SerializedName("id")
+    val id: String? = null,
+
     @SerializedName("full_name") val fullName: String,
     @SerializedName("position") val position: String,
     @SerializedName("department_id") val departmentId: Int?,
     @SerializedName("role") val role: String,
     @SerializedName("is_available_for_change") val isAvailableForChange: Boolean,
-    @SerializedName("created_at") val createdAt: String?,
-    @SerializedName("updated_at") val updatedAt: String?,
-    @SerializedName("profile_skills") val profileSkills: List<ProfileSkill>?
+
+    // CAMBIO 2: Asegúrate de que esto siga diciendo "profile_skills"
+    // para que coincida con tu backend C# [JsonPropertyName("profile_skills")]
+    @SerializedName("profile_skills")
+    val profileSkills: List<ProfileSkill>? = null
 )
 
 data class Skill(
@@ -24,10 +30,12 @@ data class Vacancy(
     @SerializedName("title") val title: String,
     @SerializedName("description") val description: String?,
     @SerializedName("department_id") val departmentId: Int?,
-    @SerializedName("created_by") val createdBy: String?,
     @SerializedName("status") val status: String?,
-    @SerializedName("created_at") val createdAt: String?,
-    @SerializedName("vacancy_skills") val vacancySkills: List<VacancySkill>?
+
+    // --- CORRECCIÓN AQUÍ ---
+    // Debe decir "skills" para coincidir con tu C# [JsonPropertyName("skills")]
+    @SerializedName("skills")
+    val vacancySkills: List<VacancySkill>?
 )
 
 data class Department(
@@ -38,12 +46,14 @@ data class Department(
 
 data class ProfileSkill(
     @SerializedName("profile_id") val profileId: String,
-    @SerializedName("skill_id") val skillId: Int
+    @SerializedName("skill_id") val skillId: Int,
+    @SerializedName("grado") val grado: Int
 )
 
 data class VacancySkill(
     @SerializedName("vacancy_id") val vacancyId: Int,
-    @SerializedName("skill_id") val skillId: Int
+    @SerializedName("skill_id") val skillId: Int,
+    @SerializedName("grado") val grado: Int
 )
 
 // --- Metrics Models ---
@@ -97,4 +107,9 @@ data class OwaspConfig(
     @SerializedName("control_name") val controlName: String,
     @SerializedName("description") val description: String,
     @SerializedName("is_enabled") val isEnabled: Boolean
+)
+
+data class SkillConGrado(
+    val skill: Skill,
+    var grade: Int
 )

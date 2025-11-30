@@ -52,7 +52,7 @@ class MiEquipoViewModel : ViewModel() {
                     } ?: emptyList()
 
                     TeamMemberUi(
-                        id = profile.id,
+                        id = profile.id ?: "",
                         name = profile.fullName,
                         title = profile.position,
                         skills = profileSkillNames
