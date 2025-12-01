@@ -101,4 +101,10 @@ interface ApiService {
 
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Profile
+
+    @GET("api/Sugerencias?select=*,profiles(*)")
+    suspend fun getSugerencias(): List<Sugerencia>
+
+    @DELETE("api/Sugerencias/{id}")
+    suspend fun deleteSugerencia(@Path("id") id: Long): Response<Void>
 }

@@ -47,6 +47,7 @@ data class VacancySkill(
     @SerializedName("grado") val grado: Int
 )
 
+// Modelo para ENVIAR una sugerencia (desde el formulario de colaborador)
 data class Suggestion(
     @SerializedName("text") val text: String,
     @SerializedName("collaborator_name") val collaboratorName: String,
@@ -110,4 +111,23 @@ data class OwaspConfig(
 data class SkillConGrado(
     val skill: Skill,
     var grade: Int
+)
+
+// --- Modelos para RECIBIR sugerencias de la BD ---
+
+enum class EstadoSugerencia {
+    @SerializedName("en_proceso")
+    EN_PROCESO,
+    @SerializedName("aceptada")
+    ACEPTADA,
+    @SerializedName("rechazada")
+    RECHAZADA
+}
+
+data class Sugerencia(
+    @SerializedName("id") val id: Long,
+    @SerializedName("user_id") val userId: String?,
+    @SerializedName("descripcion") val descripcion: String,
+    @SerializedName("estado") val estado: EstadoSugerencia,
+    @SerializedName("profiles") val profile: Profile?
 )

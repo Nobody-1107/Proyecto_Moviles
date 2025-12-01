@@ -114,8 +114,9 @@ class LiderDashboardActivity : ComponentActivity() {
                                 onNavigateToRegisterCollaborator = { navController.navigate("formulario_colaborador") },
                                 onNavigateToCollaboratorDetail = { profileId ->
                                     navController.navigate("collaboratorDetail/$profileId")
-                                }
-                            ) 
+                                },
+                                onNavigateToSugerencias = { navController.navigate("sugerencias") } // <-- INSTRUCCIÓN AÑADIDA
+                            )
                         }
 
                         composable(
@@ -124,7 +125,7 @@ class LiderDashboardActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val profileId = backStackEntry.arguments?.getString("profileId") ?: ""
                             CollaboratorDetailScreen(
-                                profileId = profileId, 
+                                profileId = profileId,
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToEdit = { navController.navigate("edit_collaborator/$profileId") }
                             )
@@ -154,6 +155,15 @@ class LiderDashboardActivity : ComponentActivity() {
                         }
                         composable("actualizar_habilidades") { ActualizarHabilidadesScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("gestion_seguridad") { GestionSeguridadScreen(onNavigateBack = { navController.popBackStack() }) }
+
+                        composable("sugerencias") {
+                            SugerenciasScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToEditProfile = { profileId ->
+                                    navController.navigate("edit_collaborator/$profileId")
+                                }
+                            )
+                        }
                     }
                 }
             }

@@ -22,6 +22,7 @@ import com.example.proyectomoviles.viewmodel.GestionLiderViewModel
 fun GestionLiderScreen(
     onNavigateToRegisterCollaborator: () -> Unit,
     onNavigateToCollaboratorDetail: (String) -> Unit, // Para navegar al detalle/editar
+    onNavigateToSugerencias: () -> Unit, // <-- 1. PARÁMETRO AÑADIDO
     viewModel: GestionLiderViewModel = viewModel()
 ) {
     val collaborators by viewModel.collaborators.collectAsState()
@@ -41,8 +42,31 @@ fun GestionLiderScreen(
         }
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Mi Equipo", style = MaterialTheme.typography.titleLarge)
-        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween, // Separa los elementos a los extremos
+            verticalAlignment = Alignment.CenterVertically    // Los alinea verticalmente al centro
+        ) {
+            Text(
+                text = "Mi Equipo",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Button(
+                onClick = onNavigateToSugerencias,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Spacer(Modifier.width(8.dp))
+                Text("Sugerencias")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
