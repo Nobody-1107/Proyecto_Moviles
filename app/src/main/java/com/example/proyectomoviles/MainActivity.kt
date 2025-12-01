@@ -1,5 +1,6 @@
 package com.example.proyectomoviles
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -35,6 +36,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.proyectomoviles.ui.theme.ProyectoMovilesTheme
+import kotlinx.coroutines.launch
+
+// --- IMPORTS DE RED ---
+import com.example.proyectomoviles.network.RetrofitClient
+import com.example.proyectomoviles.network.ApiService
+import com.example.proyectomoviles.model.LoginRequest
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,16 +59,18 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen(modifier: Modifier = Modifier) {
+    // Variables de estado UI
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var rememberSession by rememberSaveable { mutableStateOf(false) }
+
+    // Variables de Lógica de Red
     val context = LocalContext.current
-
-    val collaboratorCredentials = "james.smith@empresa.com" to "Demo2024!"
-    val leaderCredentials = "lider@empresa.com" to "Lider123!"
-    val adminCredentials = "admin@empresa.com" to "Admin123!"
-
+    val scope = rememberCoroutineScope()
+    // Creamos el servicio usando tu RetrofitClient existente
+    val apiService = remember { RetrofitClient.instance.create(ApiService::class.java) }
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -151,32 +160,73 @@ fun LoginScreen(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(16.dp))
 
+        // --- BOTÓN CON LÓGICA DE BACKEND ---
         Button(
             onClick = {
-                when (email to password) {
-                    collaboratorCredentials -> {
-                        context.startActivity(Intent(context, DashboardColaboradorActivity::class.java))
-                    }
-                    leaderCredentials -> {
-                        val intent = Intent(context, LiderDashboardActivity::class.java)
-                        intent.putExtra("USER_ROLE", "ROLE_LIDER")
-                        context.startActivity(intent)
-                    }
-                    adminCredentials -> {
-                        val intent = Intent(context, LiderDashboardActivity::class.java)
-                        intent.putExtra("USER_ROLE", "ROLE_ADMIN")
-                        context.startActivity(intent)
-                    }
-                    else -> {
-                        Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    isLoading = true
+                    try {
+                        // 1. Llamada Real al Backend
+                        val request = LoginRequest(email, password)
+                        val profile = apiService.login(request)
+
+                        // --- NUEVO: GUARDAR SESIÓN EN PREFERENCIAS ---
+                        val sharedPref = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
+                        with(sharedPref.edit()) {
+                            putString("USER_ID", profile.id)
+                            putString("USER_NAME", profile.fullName) // Aquí guardamos "Boris Fernandez"
+                            putString("USER_ROLE", profile.role)
+                            putString("USER_POSITION", profile.position)
+                            putBoolean("IS_LOGGED_IN", true)
+                            apply()
+                        }
+                        // ---------------------------------------------
+
+                        // 2. Lógica de Redirección según Rol (Normalizamos a minúsculas)
+                        val role = profile.role.lowercase().trim()
+
+                        when {
+                            role.contains("colaborador") || role.contains("collaborator") -> {
+                                Toast.makeText(context, "Bienvenido ${profile.fullName}", Toast.LENGTH_SHORT).show()
+                                context.startActivity(Intent(context, DashboardColaboradorActivity::class.java))
+                            }
+                            role.contains("lider") || role.contains("leader") -> {
+                                Toast.makeText(context, "Bienvenido Líder ${profile.fullName}", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(context, LiderDashboardActivity::class.java)
+                                intent.putExtra("USER_ROLE", "ROLE_LIDER")
+                                context.startActivity(intent)
+                            }
+                            role.contains("admin") -> {
+                                Toast.makeText(context, "Bienvenido Admin ${profile.fullName}", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(context, LiderDashboardActivity::class.java)
+                                intent.putExtra("USER_ROLE", "ROLE_ADMIN")
+                                context.startActivity(intent)
+                            }
+                            else -> {
+                                Toast.makeText(context, "Rol no reconocido: $role", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+
+                    } catch (e: Exception) {
+                        // Manejo de errores
+                        val msg = if (e.message?.contains("401") == true) "Correo o contraseña incorrectos" else "Error: ${e.message}"
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    } finally {
+                        isLoading = false
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0073E6))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0073E6)),
+            enabled = !isLoading
         ) {
-            Text("Iniciar sesión", color = Color.White)
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Iniciar sesión", color = Color.White)
+            }
         }
+
         Spacer(modifier = Modifier.height(8.dp))
         ClickableText(
             text = AnnotatedString("¿Olvidaste tu contraseña?"),
@@ -186,7 +236,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- Credenciales de prueba ---
+        // --- Credenciales de prueba (Solo visual) ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()

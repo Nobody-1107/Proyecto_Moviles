@@ -89,9 +89,8 @@ class LiderDashboardActivity : ComponentActivity() {
                         composable("demanda") {
                             DemandaLiderScreen(
                                 onNavigateToCreateVacante = { navController.navigate("formulario_vacante") },
-                                onNavigateToDetail = { vacancyId ->
-                                    navController.navigate("vacancyDetail/$vacancyId")
-                                }
+                                onNavigateToDetail = { vacancyId -> navController.navigate("vacancyDetail/$vacancyId") },
+                                onNavigateToEditProfile = { profileId -> navController.navigate("edit_collaborator/$profileId") }
                             )
                         }
                         composable(
@@ -99,18 +98,45 @@ class LiderDashboardActivity : ComponentActivity() {
                             arguments = listOf(navArgument("vacancyId") { type = NavType.IntType })
                         ) { backStackEntry ->
                             val vacancyId = backStackEntry.arguments?.getInt("vacancyId") ?: 0
-                            VacancyDetailScreen(vacancyId = vacancyId)
+                            VacancyDetailScreen(vacancyId = vacancyId, navController = navController)
+                        }
+                        composable(
+                            "edit_vacancy/{vacancyId}",
+                            arguments = listOf(navArgument("vacancyId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val vacancyId = backStackEntry.arguments?.getInt("vacancyId") ?: 0
+                            EditVacancyScreen(vacancyId = vacancyId, onNavigateBack = { navController.popBackStack() })
                         }
                         composable("formulario_vacante") { FormularioVacanteScreen(onNavigateBack = { navController.popBackStack() }) }
                         
-                        // --- CORRECCIÓN AQUÍ ---
                         composable("gestion") { 
                             GestionLiderScreen(
                                 onNavigateToRegisterCollaborator = { navController.navigate("formulario_colaborador") },
-                                onNavigateToCollaboratorDetail = { /* TODO: Navegar a la pantalla de detalle del colaborador */ }
+                                onNavigateToCollaboratorDetail = { profileId ->
+                                    navController.navigate("collaboratorDetail/$profileId")
+                                }
                             ) 
                         }
-                        // --- FIN DE LA CORRECCIÓN ---
+
+                        composable(
+                            "collaboratorDetail/{profileId}",
+                            arguments = listOf(navArgument("profileId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val profileId = backStackEntry.arguments?.getString("profileId") ?: ""
+                            CollaboratorDetailScreen(
+                                profileId = profileId, 
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToEdit = { navController.navigate("edit_collaborator/$profileId") }
+                            )
+                        }
+
+                        composable(
+                            "edit_collaborator/{profileId}",
+                            arguments = listOf(navArgument("profileId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val profileId = backStackEntry.arguments?.getString("profileId") ?: ""
+                            EditCollaboratorScreen(profileId = profileId, onNavigateBack = { navController.popBackStack() })
+                        }
 
                         composable("formulario_colaborador") { FormularioColaboradorScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("reportes") { ReportesScreen() }

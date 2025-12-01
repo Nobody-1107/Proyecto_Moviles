@@ -3,19 +3,13 @@ package com.example.proyectomoviles.model
 import com.google.gson.annotations.SerializedName
 
 data class Profile(
-    // CAMBIO 1: El ID debe ser String nullable (String?) y tener valor por defecto null.
-    // Así, cuando crees un perfil nuevo, no envías nada y el Backend genera el UUID.
     @SerializedName("id")
     val id: String? = null,
-
     @SerializedName("full_name") val fullName: String,
     @SerializedName("position") val position: String,
     @SerializedName("department_id") val departmentId: Int?,
     @SerializedName("role") val role: String,
     @SerializedName("is_available_for_change") val isAvailableForChange: Boolean,
-
-    // CAMBIO 2: Asegúrate de que esto siga diciendo "profile_skills"
-    // para que coincida con tu backend C# [JsonPropertyName("profile_skills")]
     @SerializedName("profile_skills")
     val profileSkills: List<ProfileSkill>? = null
 )
@@ -31,9 +25,6 @@ data class Vacancy(
     @SerializedName("description") val description: String?,
     @SerializedName("department_id") val departmentId: Int?,
     @SerializedName("status") val status: String?,
-
-    // --- CORRECCIÓN AQUÍ ---
-    // Debe decir "skills" para coincidir con tu C# [JsonPropertyName("skills")]
     @SerializedName("skills")
     val vacancySkills: List<VacancySkill>?
 )
@@ -55,6 +46,13 @@ data class VacancySkill(
     @SerializedName("skill_id") val skillId: Int,
     @SerializedName("grado") val grado: Int
 )
+
+data class Suggestion(
+    @SerializedName("text") val text: String,
+    @SerializedName("collaborator_name") val collaboratorName: String,
+    @SerializedName("collaborator_id") val collaboratorId: String
+)
+
 
 // --- Metrics Models ---
 

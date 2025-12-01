@@ -2,144 +2,73 @@ package com.example.proyectomoviles.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyectomoviles.model.Suggestion
 import com.example.proyectomoviles.model.Vacancy
-import com.example.proyectomoviles.model.VacancySkill
 import com.example.proyectomoviles.network.ApiService
 import com.example.proyectomoviles.network.RetrofitClient
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// Asegúrate de tener este modelo en tu proyecto (SkillConGrado)
-// Si no, defínelo temporalmente aquí o impórtalo.
+data class DemandaLiderUiState(
+    val vacancies: List<VacancyUi> = emptyList(), // Usamos el modelo de UI
+    val suggestions: List<Suggestion> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null
+)
+
+// Modelo de datos para la UI, procesado y listo para mostrar
 data class VacancyUi(
     val id: Int,
     val title: String,
     val department: String,
-    val skills: List<String>,
     val status: String,
-    val coverage: Float
+    val skills: List<String>
 )
 
 class DemandaLiderViewModel : ViewModel() {
 
-    private val _vacancies = MutableStateFlow<List<VacancyUi>>(emptyList())
-    val vacancies: StateFlow<List<VacancyUi>> = _vacancies
+    private val _uiState = MutableStateFlow(DemandaLiderUiState())
+    val uiState = _uiState.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val apiService = RetrofitClient.instance.create(ApiService::class.java)
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
-
-    private val _createSuccess = MutableStateFlow(false)
-    val createSuccess: StateFlow<Boolean> = _createSuccess
-
-    fun cargarVacantes() {
+    fun loadDashboardData() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val api = RetrofitClient.instance.create(ApiService::class.java)
+                // Obtenemos todos los datos maestros en paralelo
+                val allSkills = apiService.getSkills().associateBy { it.id }
+                val allDepartments = apiService.getDepartments().associateBy { it.id }
+                val vacanciesRaw = apiService.getVacancies()
+                val suggestions = apiService.getSuggestions()
 
-                val vacanciesRaw = api.getVacancies()
-                // Usamos try-catch en llamadas secundarias para que no rompan todo si fallan
-                val departments = try { api.getDepartments().associateBy { it.id } } catch (e: Exception) { emptyMap() }
-                val allSkillsMap = try { api.getSkills().associateBy { it.id } } catch (e: Exception) { emptyMap() }
-
-                val uiModels = vacanciesRaw.map { vac ->
-                    async {
-                        val deptName = departments[vac.departmentId]?.name ?: "Desconocido"
-
-                        val vacancySkills = try {
-                            api.getVacancySkills(vac.id)
-                        } catch (e: Exception) {
-                            emptyList()
-                        }
-
-                        val skillNames = vacancySkills.mapNotNull { vs -> allSkillsMap[vs.skillId]?.name }
-
-                        VacancyUi(
-                            id = vac.id,
-                            title = vac.title,
-                            department = deptName,
-                            skills = skillNames,
-                            status = vac.status ?: "Abierta",
-                            coverage = 0.5f
-                        )
-                    }
-                }.awaitAll()
-
-                _vacancies.value = uiModels
-
-            } catch (e: Exception) {
-                _error.value = "Error al cargar: ${e.localizedMessage}"
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    // --- FUNCIÓN CORREGIDA ---
-    fun crearVacante(
-        title: String,
-        departmentId: Int?,
-        description: String,
-        skillsSeleccionados: List<SkillConGrado>, // <--- Recibimos la lista de la UI
-        status: String = "Abierta"
-    ) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _createSuccess.value = false
-            _error.value = null
-            try {
-                val api = RetrofitClient.instance.create(ApiService::class.java)
-
-                // 1. Validar Departamento
-                if (departmentId == null || departmentId == 0) {
-                    _error.value = "Selecciona un departamento válido."
-                    return@launch
-                }
-
-                // 2. Mapear los Skills de la UI (SkillConGrado) al modelo del Backend (VacancySkill)
-                // Nota: vacancyId va en 0, el backend lo asignará.
-                val skillsParaBackend = skillsSeleccionados.map { uiSkill ->
-                    VacancySkill(
-                        vacancyId = 0,
-                        skillId = uiSkill.skill.id,
-                        grado = uiSkill.grade
+                // Procesamos las vacantes para crear los objetos de UI
+                val vacanciesUi = vacanciesRaw.map { vacancy ->
+                    val departmentName = allDepartments[vacancy.departmentId]?.name ?: "Desconocido"
+                    val skillNames = vacancy.vacancySkills?.mapNotNull { allSkills[it.skillId]?.name } ?: emptyList()
+                    
+                    VacancyUi(
+                        id = vacancy.id,
+                        title = vacancy.title,
+                        department = departmentName,
+                        status = vacancy.status ?: "N/A",
+                        skills = skillNames
                     )
                 }
 
-                // 3. Crear el objeto Vacancy limpio (Sin createdBy, sin createdAt)
-                val newVacancy = Vacancy(
-                    id = 0,
-                    title = title,
-                    description = description,
-                    departmentId = departmentId,
-                    status = status,
-                    vacancySkills = skillsParaBackend // ¡Enviamos la lista aquí!
-                )
-
-                // 4. Enviar
-                api.createVacancy(newVacancy)
-
-                _createSuccess.value = true
-                cargarVacantes() // Recargar lista
+                _uiState.update {
+                    it.copy(
+                        vacancies = vacanciesUi,
+                        suggestions = suggestions,
+                        isLoading = false
+                    )
+                }
 
             } catch (e: Exception) {
-                _error.value = "Error al guardar: ${e.message}"
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
+                _uiState.update { it.copy(error = "Error al cargar el dashboard: ${e.message}", isLoading = false) }
             }
         }
-    }
-
-    fun resetCreateSuccess() {
-        _createSuccess.value = false
     }
 }

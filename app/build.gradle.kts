@@ -39,6 +39,21 @@ android {
     buildFeatures {
         compose = true
     }
+    packagingOptions {
+        resources {
+            excludes.add("/META-INF/{AL2.0,LGPL2.1}")
+            excludes.add("META-INF/DEPENDENCIES")
+            excludes.add("META-INF/LICENSE")
+            excludes.add("META-INF/LICENSE.txt")
+            excludes.add("META-INF/license.txt")
+            excludes.add("META-INF/NOTICE")
+            excludes.add("META-INF/NOTICE.txt")
+            excludes.add("META-INF/notice.txt")
+            excludes.add("META-INF/ASL2.0")
+            excludes.add("META-INF/INDEX.LIST")
+            excludes.add("META-INF/io.netty.versions.properties")
+        }
+    }
 }
 
 dependencies {
@@ -56,6 +71,8 @@ dependencies {
     // Networking
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.firebase.appdistribution.gradle)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

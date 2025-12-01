@@ -38,6 +38,9 @@ class VacancyDetailViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _vacancyDeleted = MutableStateFlow(false)
+    val vacancyDeleted: StateFlow<Boolean> = _vacancyDeleted
+
     fun loadVacancyDetails(vacancyId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -103,6 +106,27 @@ class VacancyDetailViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 _error.value = "Error al cargar los detalles: ${e.localizedMessage}"
+                e.printStackTrace()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteVacancy(vacancyId: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val api = RetrofitClient.instance.create(ApiService::class.java)
+                val response = api.deleteVacancy(vacancyId)
+                if (response.isSuccessful) {
+                    _vacancyDeleted.value = true
+                } else {
+                    _error.value = "Error al eliminar la vacante: ${response.message()}"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error al eliminar la vacante: ${e.localizedMessage}"
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false

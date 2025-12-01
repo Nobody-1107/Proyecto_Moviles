@@ -1,7 +1,9 @@
 package com.example.proyectomoviles.network
 
 import com.example.proyectomoviles.model.*
+import retrofit2.Response
 import retrofit2.http.*
+import com.example.proyectomoviles.model.LoginRequest
 
 interface ApiService {
 
@@ -19,7 +21,7 @@ interface ApiService {
     suspend fun updateProfile(@Path("id") id: String, @Body profile: Profile): Profile
 
     @DELETE("api/profiles/{id}")
-    suspend fun deleteProfile(@Path("id") id: String)
+    suspend fun deleteProfile(@Path("id") id: String): Response<Void>
 
     // SKILLS
     @GET("api/skills")
@@ -38,6 +40,16 @@ interface ApiService {
     @POST("api/vacancies")
     suspend fun createVacancy(@Body vacancy: Vacancy): Vacancy
 
+    @PUT("api/vacancies/{id}")
+    suspend fun updateVacancy(@Path("id") id: Int, @Body vacancy: Vacancy): Response<Vacancy>
+
+    @DELETE("api/vacancies/{id}")
+    suspend fun deleteVacancy(@Path("id") id: Int): Response<Void>
+
+    // SUGGESTIONS
+    @GET("api/suggestion") // CORREGIDO: Cambiado de plural a singular
+    suspend fun getSuggestions(): List<Suggestion>
+
     // Asignar candidato (Endpoint hipotético para la funcionalidad)
     @POST("api/vacancies/{vacancyId}/candidates")
     suspend fun addCandidateToVacancy(@Path("vacancyId") vacancyId: Int, @Body profileId: String)
@@ -54,7 +66,10 @@ interface ApiService {
     suspend fun getProfileSkills(@Path("profileId") profileId: String): List<ProfileSkill>
 
     @POST("api/profileskills")
-    suspend fun createProfileSkill(@Body profileSkill: ProfileSkill)
+    suspend fun createProfileSkill(@Body profileSkill: ProfileSkill): ProfileSkill
+
+    @HTTP(method = "DELETE", path = "api/profileskills", hasBody = true)
+    suspend fun deleteProfileSkill(@Body body: Map<String, String>): Response<Void>
 
     // VACANCY SKILLS
     @GET("api/vacancyskills/by-vacancy/{vacancyId}")
@@ -83,4 +98,7 @@ interface ApiService {
     // --- SLA METRICS ENDPOINTS ---
     @GET("api/metrics/sla")
     suspend fun getSlaMetrics(): List<SlaMetric>
+
+    @POST("api/auth/login")
+    suspend fun login(@Body request: LoginRequest): Profile
 }

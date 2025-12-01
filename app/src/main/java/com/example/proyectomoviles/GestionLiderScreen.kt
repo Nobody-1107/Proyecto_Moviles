@@ -52,13 +52,12 @@ fun GestionLiderScreen(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(collaborators) { collaborator ->
-                    CollaboratorCard(
-                        collaborator = collaborator,
-                        onClick = {
-                            // TODO: En un futuro, navegar a la pantalla de edición
-                            // onNavigateToCollaboratorDetail(collaborator.id)
-                        }
-                    )
+                    collaborator.id?.let { // Asegurarnos de que el ID no es nulo
+                        CollaboratorCard(
+                            collaborator = collaborator,
+                            onClick = { onNavigateToCollaboratorDetail(it) }
+                        )
+                    }
                 }
             }
         }
