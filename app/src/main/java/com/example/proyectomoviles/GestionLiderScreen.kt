@@ -1,9 +1,12 @@
 package com.example.proyectomoviles
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,8 +24,8 @@ import com.example.proyectomoviles.viewmodel.GestionLiderViewModel
 @Composable
 fun GestionLiderScreen(
     onNavigateToRegisterCollaborator: () -> Unit,
-    onNavigateToCollaboratorDetail: (String) -> Unit, // Para navegar al detalle/editar
-    onNavigateToSugerencias: () -> Unit, // <-- 1. PARÁMETRO AÑADIDO
+    onNavigateToCollaboratorDetail: (String) -> Unit,
+    onNavigateToSugerencias: () -> Unit, 
     viewModel: GestionLiderViewModel = viewModel()
 ) {
     val collaborators by viewModel.collaborators.collectAsState()
@@ -36,35 +39,30 @@ fun GestionLiderScreen(
     Column(modifier = Modifier.padding(16.dp)) {
         Button(
             onClick = onNavigateToRegisterCollaborator,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp)
         ) {
-            Text("Registrar Nuevo Colaborador")
+            Icon(Icons.Default.Add, contentDescription = "Registrar")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Registrar Nuevo Colaborador", style = MaterialTheme.typography.titleMedium)
         }
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween, // Separa los elementos a los extremos
-            verticalAlignment = Alignment.CenterVertically    // Los alinea verticalmente al centro
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Mi Equipo",
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            Button(
-                onClick = onNavigateToSugerencias,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Spacer(Modifier.width(8.dp))
+            Text("Mi Equipo", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            FilledTonalButton(onClick = onNavigateToSugerencias) {
                 Text("Sugerencias")
             }
         }
-
+        
         Spacer(modifier = Modifier.height(16.dp))
 
         if (isLoading) {
@@ -74,9 +72,9 @@ fun GestionLiderScreen(
         } else if (error != null) {
             Text(text = error!!, color = Color.Red)
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(collaborators) { collaborator ->
-                    collaborator.id?.let { // Asegurarnos de que el ID no es nulo
+                    collaborator.id?.let { 
                         CollaboratorCard(
                             collaborator = collaborator,
                             onClick = { onNavigateToCollaboratorDetail(it) }
@@ -93,12 +91,23 @@ private fun CollaboratorCard(collaborator: Profile, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(collaborator.fullName, fontWeight = FontWeight.Bold)
-            Text(collaborator.position, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+            Text(
+                collaborator.fullName, 
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                collaborator.position, 
+                style = MaterialTheme.typography.bodyMedium, 
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
