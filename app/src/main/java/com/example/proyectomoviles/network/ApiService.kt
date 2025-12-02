@@ -46,10 +46,6 @@ interface ApiService {
     @DELETE("api/vacancies/{id}")
     suspend fun deleteVacancy(@Path("id") id: Int): Response<Void>
 
-    // SUGGESTIONS
-    @GET("api/suggestion") // CORREGIDO: Cambiado de plural a singular
-    suspend fun getSuggestions(): List<Suggestion>
-
     // Asignar candidato (Endpoint hipotético para la funcionalidad)
     @POST("api/vacancies/{vacancyId}/candidates")
     suspend fun addCandidateToVacancy(@Path("vacancyId") vacancyId: Int, @Body profileId: String)
@@ -98,9 +94,10 @@ interface ApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Profile
 
-    @GET("api/Sugerencias?select=*,profiles(*)")
+    // SUGGESTIONS
+    @GET("api/sugerencias?select=*,profiles(*)")
     suspend fun getSugerencias(): List<Sugerencia>
 
-    @DELETE("api/Sugerencias/{id}")
+    @DELETE("api/sugerencias/{id}")
     suspend fun deleteSugerencia(@Path("id") id: Long): Response<Void>
 }

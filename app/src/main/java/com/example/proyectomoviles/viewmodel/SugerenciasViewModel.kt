@@ -5,82 +5,70 @@ import androidx.lifecycle.viewModelScope
 import com.example.proyectomoviles.model.Sugerencia
 import com.example.proyectomoviles.network.ApiService
 import com.example.proyectomoviles.network.RetrofitClient
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+// Este es el modelo de datos que la UI usará
+data class SugerenciaUi(
+    val id: Long,
+    val descripcion: String,
+    val collaboratorName: String
+)
+
+data class SugerenciasUiState(
+    val sugerencias: List<SugerenciaUi> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
 
 class SugerenciasViewModel : ViewModel() {
 
-    private val _sugerencias = MutableStateFlow<List<Sugerencia>>(emptyList())
-    val sugerencias: StateFlow<List<Sugerencia>> = _sugerencias.asStateFlow()
+    private val _uiState = MutableStateFlow(SugerenciasUiState())
+    val uiState: StateFlow<SugerenciasUiState> = _uiState
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val apiService: ApiService = RetrofitClient.instance.create(ApiService::class.java)
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
-    private val apiService: ApiService by lazy {
-        RetrofitClient.instance.create(ApiService::class.java)
+    init {
+        loadSugerencias()
     }
 
-    fun loadSugerencias() {
+    private fun loadSugerencias() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // 1. Obtenemos la lista de sugerencias inicial
-                val sugerenciasSinPerfil = apiService.getSugerencias()
+                val sugerenciasRaw = apiService.getSugerencias()
+                val profiles = apiService.getProfiles().associateBy { it.id } // Necesitamos los perfiles
 
-                // 2. Para cada sugerencia, vamos a buscar su perfil si tiene un user_id
-                val sugerenciasConPerfil = sugerenciasSinPerfil.map { sugerencia ->
-                    async {
-                        if (sugerencia.userId != null) {
-                            try {
-                                // 3. Hacemos la llamada para obtener el perfil
-                                val perfil = apiService.getProfileById(sugerencia.userId)
-                                // 4. Devolvemos una copia de la sugerencia con el perfil ya incluido
-                                sugerencia.copy(profile = perfil)
-                            } catch (e: Exception) {
-                                // Si falla la búsqueda del perfil, devolvemos la sugerencia original
-                                sugerencia
-                            }
-                        } else {
-                            // Si no hay user_id, es anónima, la devolvemos tal cual
-                            sugerencia
-                        }
+                val sugerenciasUi = sugerenciasRaw.mapNotNull { sugerencia ->
+                    val profile = sugerencia.profile ?: sugerencia.userId?.let { profiles[it] }
+                    profile?.let {
+                        SugerenciaUi(
+                            id = sugerencia.id,
+                            descripcion = sugerencia.descripcion,
+                            collaboratorName = it.fullName
+                        )
                     }
-                }.awaitAll() // Esperamos a que todas las búsquedas de perfiles terminen
-
-                _sugerencias.value = sugerenciasConPerfil
-
+                }
+                _uiState.value = SugerenciasUiState(sugerencias = sugerenciasUi)
             } catch (e: Exception) {
-                _error.value = "No se pudieron cargar las sugerencias: ${e.message}"
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
+                _uiState.value = SugerenciasUiState(error = "Error al cargar sugerencias: ${e.message}")
             }
         }
     }
 
-    fun deleteSugerencia(sugerenciaId: Long) {
+    fun deleteSugerencia(id: Long) {
         viewModelScope.launch {
+            val originalState = _uiState.value
+            // Optimistic update
+            val newList = originalState.sugerencias.filter { it.id != id }
+            _uiState.value = originalState.copy(sugerencias = newList)
+            
             try {
-                val response = apiService.deleteSugerencia(sugerenciaId)
-                if (response.isSuccessful) {
-                    // Si se borra en la BD, la quitamos de la lista local
-                    _sugerencias.update { currentList ->
-                        currentList.filterNot { it.id == sugerenciaId }
-                    }
-                }
+                apiService.deleteSugerencia(id)
             } catch (e: Exception) {
-                // Manejar posible error de red o del servidor
-                _error.value = "Error al eliminar la sugerencia: ${e.message}"
-                e.printStackTrace()
+                // Revert on error
+                _uiState.value = originalState.copy(error = "Error al procesar la sugerencia: ${e.message}")
             }
         }
     }

@@ -119,8 +119,7 @@ class LiderDashboardActivity : ComponentActivity() {
                         }
 
                         composable("sugerencias") {
-                            // TODO: Create a proper screen for this
-                            Text("Sugerencias Screen")
+                            SugerenciasScreen(onNavigateBack = { navController.popBackStack() })
                         }
 
                         composable(
