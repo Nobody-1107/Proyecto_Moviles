@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun FormularioColaboradorScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToCargaMasiva: () -> Unit, // Added for navigation
     viewModel: CrearColaboradorViewModel = viewModel()
 ) {
     val fullName by viewModel.fullName.collectAsState()
@@ -49,7 +51,18 @@ fun FormularioColaboradorScreen(
             .padding(16.dp)
     ) {
         item {
-            Text("Registrar Nuevo Colaborador", style = MaterialTheme.typography.headlineSmall)
+            Column {
+                Text("Registrar Nuevo Colaborador", style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                FilledTonalButton(
+                    onClick = onNavigateToCargaMasiva,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Upload, contentDescription = "Carga Masiva", modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Carga Masiva de Colaboradores")
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -62,7 +75,7 @@ fun FormularioColaboradorScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
-        
+
         item {
             OutlinedTextField(
                 value = position,
@@ -81,7 +94,7 @@ fun FormularioColaboradorScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
-        
+
         item {
             RoleSelector(
                 selectedRole = selectedRole,
@@ -110,7 +123,7 @@ fun FormularioColaboradorScreen(
                 }
             )
         }
-        
+
         item {
             Spacer(modifier = Modifier.height(24.dp))
             Button(
@@ -125,7 +138,7 @@ fun FormularioColaboradorScreen(
                 }
             }
         }
-        
+
         error?.let {
             item {
                 Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
@@ -234,7 +247,7 @@ private fun SkillSelector(
     var expanded by remember { mutableStateOf(false) }
     val availableSkills = allSkills.filter { skill -> selectedSkills.none { it.skill.id == skill.id } }
     val interactionSource = remember { MutableInteractionSource() }
-    
+
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collectLatest {
             if (it is PressInteraction.Release) {

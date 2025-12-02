@@ -95,10 +95,6 @@ interface ApiService {
     @PUT("api/security/owasp-config/{id}")
     suspend fun updateOwaspConfig(@Path("id") id: Int, @Body config: OwaspConfig)
 
-    // --- SLA METRICS ENDPOINTS ---
-    @GET("api/metrics/sla")
-    suspend fun getSlaMetrics(): List<SlaMetric>
-
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Profile
 

@@ -116,6 +116,26 @@ fun CollaboratorDetailScreen(
                     
                     HorizontalDivider()
 
+                    // Availability Section
+                    Text("Disponibilidad", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Disponible para cambio", style = MaterialTheme.typography.bodyLarge)
+                        Switch(
+                            checked = uiState.profile!!.isAvailableForChange,
+                            onCheckedChange = { isChecked ->
+                                // This will require a new ViewModel function
+                                // viewModel.updateAvailability(profileId, isChecked)
+                                Toast.makeText(context, "Funcionalidad no implementada todavía", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+
+                    HorizontalDivider()
+
                     Text("Habilidades", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 
                     if (uiState.skills.isNotEmpty()) {

@@ -89,8 +89,7 @@ class LiderDashboardActivity : ComponentActivity() {
                         composable("demanda") {
                             DemandaLiderScreen(
                                 onNavigateToCreateVacante = { navController.navigate("formulario_vacante") },
-                                onNavigateToDetail = { vacancyId -> navController.navigate("vacancyDetail/$vacancyId") },
-                                onNavigateToEditProfile = { profileId -> navController.navigate("edit_collaborator/$profileId") }
+                                onNavigateToDetail = { vacancyId -> navController.navigate("vacancyDetail/$vacancyId") }
                             )
                         }
                         composable(
@@ -115,8 +114,13 @@ class LiderDashboardActivity : ComponentActivity() {
                                 onNavigateToCollaboratorDetail = { profileId ->
                                     navController.navigate("collaboratorDetail/$profileId")
                                 },
-                                onNavigateToSugerencias = { navController.navigate("sugerencias") } // <-- INSTRUCCIÓN AÑADIDA
-                            )
+                                onNavigateToSugerencias = { navController.navigate("sugerencias") }
+                            ) 
+                        }
+
+                        composable("sugerencias") {
+                            // TODO: Create a proper screen for this
+                            Text("Sugerencias Screen")
                         }
 
                         composable(
@@ -125,7 +129,7 @@ class LiderDashboardActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val profileId = backStackEntry.arguments?.getString("profileId") ?: ""
                             CollaboratorDetailScreen(
-                                profileId = profileId,
+                                profileId = profileId, 
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToEdit = { navController.navigate("edit_collaborator/$profileId") }
                             )
@@ -139,31 +143,29 @@ class LiderDashboardActivity : ComponentActivity() {
                             EditCollaboratorScreen(profileId = profileId, onNavigateBack = { navController.popBackStack() })
                         }
 
-                        composable("formulario_colaborador") { FormularioColaboradorScreen(onNavigateBack = { navController.popBackStack() }) }
+                        composable("formulario_colaborador") { 
+                            FormularioColaboradorScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToCargaMasiva = { navController.navigate("carga_masiva") }
+                            ) 
+                        }
+                        composable("carga_masiva") { 
+                            CargaMasivaScreen(onNavigateBack = { navController.popBackStack() }) 
+                        }
                         composable("reportes") { ReportesScreen() }
                         composable("perfil") {
                             if (userRole == "ROLE_ADMIN") {
                                 AdminPerfilScreen(
                                     onLogout = { finish() },
-                                    onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") },
                                     onNavigateToGestionSeguridad = { navController.navigate("gestion_seguridad") },
                                     onNavigateToRegisterCollaborator = { navController.navigate("formulario_colaborador") }
                                 )
                             } else {
-                                LiderPerfilScreen(onLogout = { finish() }, onNavigateToUpdateSkills = { navController.navigate("actualizar_habilidades") })
+                                LiderPerfilScreen(onLogout = { finish() })
                             }
                         }
                         composable("actualizar_habilidades") { ActualizarHabilidadesScreen(onNavigateBack = { navController.popBackStack() }) }
                         composable("gestion_seguridad") { GestionSeguridadScreen(onNavigateBack = { navController.popBackStack() }) }
-
-                        composable("sugerencias") {
-                            SugerenciasScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                onNavigateToEditProfile = { profileId ->
-                                    navController.navigate("edit_collaborator/$profileId")
-                                }
-                            )
-                        }
                     }
                 }
             }

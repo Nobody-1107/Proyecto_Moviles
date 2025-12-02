@@ -177,6 +177,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
                             putString("USER_NAME", profile.fullName) // Aquí guardamos "Boris Fernandez"
                             putString("USER_ROLE", profile.role)
                             putString("USER_POSITION", profile.position)
+                            putBoolean("USER_IS_AVAILABLE", profile.isAvailableForChange)
                             putBoolean("IS_LOGGED_IN", true)
                             apply()
                         }

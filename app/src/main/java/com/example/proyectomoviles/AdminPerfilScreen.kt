@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AdminPerfilScreen(
     onLogout: () -> Unit,
-    onNavigateToUpdateSkills: () -> Unit,
     onNavigateToGestionSeguridad: () -> Unit,
     onNavigateToRegisterCollaborator: () -> Unit
 ) {
@@ -88,10 +87,6 @@ fun AdminPerfilScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = onNavigateToGestionSeguridad, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color.Magenta)) {
                     Text("Gestión de Seguridad y Autenticación")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = onNavigateToUpdateSkills, modifier = Modifier.fillMaxWidth()) {
-                    Text("Actualizar Habilidades y Certificaciones")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
