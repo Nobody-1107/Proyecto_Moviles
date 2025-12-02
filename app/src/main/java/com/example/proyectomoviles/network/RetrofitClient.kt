@@ -9,7 +9,7 @@ object RetrofitClient {
     private const val BASE_URL = "http://10.0.2.2:5181/" // URL para el emulador
 
     val instance: Retrofit by lazy {
-        // Creamos un interceptor de logging para ver las peticiones y respuestas
+        // Creamos un interceptor de logging para ver las peticiones y respuestas.
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
