@@ -18,7 +18,7 @@ interface ApiService {
     suspend fun createProfile(@Body profile: Profile): Profile
 
     @PUT("api/profiles/{id}")
-    suspend fun updateProfile(@Path("id") id: String, @Body profile: Profile): Profile
+    suspend fun updateProfile(@Path("id") id: String, @Body profile: Profile): Response<Profile>
 
     @DELETE("api/profiles/{id}")
     suspend fun deleteProfile(@Path("id") id: String): Response<Void>

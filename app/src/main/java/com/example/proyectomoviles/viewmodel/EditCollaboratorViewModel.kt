@@ -41,18 +41,22 @@ class EditCollaboratorViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
+                // 1. OBTENER PERFIL
+                // Gracias a tu corrección en backend, esto ya trae los "profile_skills" llenos.
                 val profile = apiService.getProfileById(profileId)
                 originalProfile = profile
 
-                val userSkills = apiService.getProfileSkills(profileId)
+                // 2. OBTENER LISTA MAESTRA DE SKILLS (Para llenar el Dropdown de agregar)
                 val allSkills = apiService.getSkills()
+
                 _uiState.update {
                     it.copy(
                         fullName = profile.fullName,
                         position = profile.position,
                         role = profile.role,
                         isAvailable = profile.isAvailableForChange,
-                        userSkills = userSkills,
+                        // Usamos la lista que viene dentro del perfil. Si es null, lista vacía.
+                        userSkills = profile.profileSkills ?: emptyList(),
                         allSkills = allSkills,
                         isLoading = false
                     )
@@ -83,23 +87,35 @@ class EditCollaboratorViewModel : ViewModel() {
     fun updateProfileDetails(profileId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+
+            val currentSkillsInScreen = _uiState.value.userSkills
+
             val profileToUpdate = originalProfile?.copy(
                 fullName = _uiState.value.fullName,
                 position = _uiState.value.position,
                 role = _uiState.value.role,
-                isAvailableForChange = _uiState.value.isAvailable
+                isAvailableForChange = _uiState.value.isAvailable,
+                profileSkills = currentSkillsInScreen
             )
 
             if (profileToUpdate == null) {
-                _uiState.update { it.copy(error = "Error: No se encontró el perfil original.", isLoading = false) }
+                _uiState.update { it.copy(error = "Error interno: Perfil original perdido", isLoading = false) }
                 return@launch
             }
 
             try {
-                apiService.updateProfile(profileId, profileToUpdate)
-                _uiState.update { it.copy(isSaved = true, isLoading = false) }
+                // --- CAMBIO AQUÍ: Recibimos Response ---
+                val response = apiService.updateProfile(profileId, profileToUpdate)
+
+                if (response.isSuccessful) {
+                    _uiState.update { it.copy(isSaved = true, isLoading = false) }
+                } else {
+                    // Ahora podemos leer el error real del backend
+                    val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                    _uiState.update { it.copy(error = "Error del servidor (${response.code()}): $errorMsg", isLoading = false) }
+                }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al guardar: ${e.message}", isLoading = false) }
+                _uiState.update { it.copy(error = "Error de conexión: ${e.message}", isLoading = false) }
             }
         }
     }
@@ -108,8 +124,11 @@ class EditCollaboratorViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             try {
+                // Hacemos la llamada inmediata para tener persistencia rápida
                 val newProfileSkill = ProfileSkill(profileId = profileId, skillId = skillId, grado = grade)
                 val addedSkill = apiService.createProfileSkill(newProfileSkill)
+
+                // Actualizamos la UI inmediatamente
                 _uiState.update {
                     it.copy(userSkills = it.userSkills + addedSkill)
                 }
@@ -125,9 +144,10 @@ class EditCollaboratorViewModel : ViewModel() {
             try {
                 val body = mapOf("profile_id" to profileId, "skill_id" to skillId.toString())
                 val response = apiService.deleteProfileSkill(body)
+
                 if (response.isSuccessful) {
                     _uiState.update {
-                        it.copy(userSkills = it.userSkills.filterNot { it.skillId == skillId })
+                        it.copy(userSkills = it.userSkills.filterNot { skill -> skill.skillId == skillId })
                     }
                 } else {
                     _uiState.update { it.copy(error = "Error: ${response.code()} ${response.message()}") }

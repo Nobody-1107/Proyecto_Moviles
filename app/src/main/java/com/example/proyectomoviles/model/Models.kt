@@ -10,6 +10,10 @@ data class Profile(
     @SerializedName("department_id") val departmentId: Int?,
     @SerializedName("role") val role: String,
     @SerializedName("is_available_for_change") val isAvailableForChange: Boolean,
+
+    // --- CORRECCIÓN CRÍTICA AQUÍ ---
+    // Tu JSON del backend dice: "profile_skills": [ ... ]
+    // Por lo tanto, aquí DEBE ser "profile_skills", no "skills".
     @SerializedName("profile_skills")
     val profileSkills: List<ProfileSkill>? = null
 )

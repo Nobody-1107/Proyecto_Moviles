@@ -10,18 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-// Modelo para la UI de los detalles de la vacante
 data class VacancyDetailUi(
     val id: Int,
     val title: String,
     val department: String,
-    val skills: List<Pair<String, Int>> // Pares de (Nombre de Skill, Grado)
+    val skills: List<Pair<String, Int>>
 )
 
-// Modelo para la UI de los candidatos recomendados
 data class RecommendedCandidateUi(
     val profile: Profile,
-    val compatibility: Int // Porcentaje de 0 a 100
+    val compatibility: Int
 )
 
 class VacancyDetailViewModel : ViewModel() {
@@ -48,16 +46,13 @@ class VacancyDetailViewModel : ViewModel() {
             try {
                 val api = RetrofitClient.instance.create(ApiService::class.java)
 
-                // 1. Obtener todos los datos maestros
                 val allSkillsMap = try { api.getSkills().associateBy { it.id } } catch (e: Exception) { emptyMap() }
                 val allDepartmentsMap = try { api.getDepartments().associateBy { it.id } } catch (e: Exception) { emptyMap() }
                 val allProfiles = try { api.getProfiles() } catch (e: Exception) { emptyList() }
 
-                // 2. Obtener los detalles de la vacante específica
                 val vacancyRaw = api.getVacancyById(vacancyId)
-                val vacancySkills = api.getVacancySkills(vacancyId) // Lista de VacancySkill
+                val vacancySkills = api.getVacancySkills(vacancyId)
 
-                // 3. Mapear los datos de la vacante al modelo de UI
                 val skillsWithGrades = vacancySkills.mapNotNull { vs ->
                     allSkillsMap[vs.skillId]?.name?.let { skillName ->
                         Pair(skillName, vs.grado)
@@ -72,37 +67,42 @@ class VacancyDetailViewModel : ViewModel() {
                     skills = skillsWithGrades
                 )
 
-                // 4. Lógica de recomendación con cálculo de compatibilidad dinámico
+                // ... dentro del try, después de _vacancy.value = ...
+
                 _candidates.value = allProfiles.map { profile ->
                     val profileSkillsMap = profile.profileSkills?.associateBy({ it.skillId }, { it.grado }) ?: emptyMap()
 
                     if (vacancySkills.isEmpty()) {
-                        // Si la vacante no requiere skills, la compatibilidad es del 100%
                         return@map RecommendedCandidateUi(profile = profile, compatibility = 100)
                     }
 
-                    val skillGaps = vacancySkills.map { requiredSkill ->
-                        val profileGrade = profileSkillsMap[requiredSkill.skillId] ?: 0
-                        val requiredGrade = requiredSkill.grado
+                    // --- LÓGICA CORREGIDA: CRÉDITO PARCIAL ---
 
-                        // La diferencia nunca puede ser negativa (el perfil no puede tener "menos" que 0)
-                        val gradeDifference = maxOf(0, requiredGrade - profileGrade)
+                    var totalScore = 0.0
 
-                        // Convertir la diferencia de grado (0-3) a un porcentaje de brecha (0-100)
-                        // Cada punto de diferencia equivale a ~33.3% de brecha
-                        val gapPercentage = (gradeDifference / 3.0) * 100.0
-                        gapPercentage
+                    vacancySkills.forEach { requiredSkill ->
+                        val candidateGrade = profileSkillsMap[requiredSkill.skillId] ?: 0
+
+                        if (requiredSkill.grado > 0) {
+                            // Calculamos cuánto cumple el candidato (Ej: Tiene 1, Pide 3 = 0.33 pts)
+                            val skillFulfillment = candidateGrade.toDouble() / requiredSkill.grado.toDouble()
+
+                            // Si tiene más de lo necesario (Ej: Tiene 5, Pide 3), topeamos a 1.0 (100% de esa skill)
+                            totalScore += if (skillFulfillment > 1.0) 1.0 else skillFulfillment
+                        } else {
+                            // Si la skill requerida tiene grado 0, cuenta como cumplida
+                            totalScore += 1.0
+                        }
                     }
 
-                    val averageGap = skillGaps.average()
-                    val compatibility = (100.0 - averageGap).roundToInt()
+                    // Promedio final: Suma de puntajes parciales / Cantidad de skills
+                    val compatibility = (totalScore / vacancySkills.size * 100).roundToInt()
 
                     RecommendedCandidateUi(
                         profile = profile,
-                        compatibility = maxOf(0, compatibility) // Asegurarse de que no sea negativo
+                        compatibility = compatibility
                     )
-
-                }.sortedByDescending { it.compatibility } // Ordenar por mejor compatibilidad
+                }.sortedByDescending { it.compatibility }
 
             } catch (e: Exception) {
                 _error.value = "Error al cargar los detalles: ${e.localizedMessage}"
